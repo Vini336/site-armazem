@@ -1,0 +1,322 @@
+// 🔗 CONEXÃO COM BANCO
+require("./database/db");
+
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+
+const app = express();
+
+const SEGREDO = "segredo_super_forte_123";
+
+function verificarToken(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).send("Acesso negado 🔒");
+  }
+
+  try {
+    const decoded = jwt.verify(token, SEGREDO);
+    req.usuario = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).send("Token inválido ❌");
+  }
+}
+
+function verificarAdmin(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).send("Acesso negado 🔒");
+  }
+
+  try {
+    const decoded = jwt.verify(token, SEGREDO);
+
+    if (decoded.tipo !== "admin") {
+      return res.status(403).send("Apenas administradores 🚫");
+    }
+
+    req.usuario = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).send("Token inválido ❌");
+  }
+}
+
+app.use(cors());
+app.use(express.json());
+
+// 🔗 CONEXÃO COM BANCO
+
+// 📦 MODELS
+const Produto = require("./models/produtos");
+const Pedido = require("./models/pedido");
+const Usuario = require("./models/usuario");
+
+// =========================
+// 📦 CRIAR PRODUTO
+// =========================
+app.post("/produto", async (req, res) => {
+  try {
+    const novoProduto = new Produto(req.body);
+    await novoProduto.save();
+
+    res.send("Produto criado com sucesso 🔥");
+  } catch (erro) {
+    res.status(500).send("Erro ao criar produto");
+  }
+});
+
+// =========================
+// 📦 LISTAR PRODUTOS
+// =========================
+app.get("/produtos", async (req, res) => {
+  try {
+    const pagina = parseInt(req.query.page) || 0;
+    const limite = 24;
+
+    const produtos = await Produto
+      .find()
+      .skip(pagina * limite)
+      .limit(limite);
+
+    res.json(produtos);
+  } catch (erro) {
+    res.status(500).send("Erro ao buscar produtos");
+  }
+});
+
+// =========================
+// 🛒 CRIAR PEDIDO (COM ESTOQUE)
+// =========================
+app.post("/pedido", verificarToken, async (req, res) => {
+  try {
+    const { nome, telefone, endereco, itens, total } = req.body;
+
+    // 🔥 CONTROLE DE ESTOQUE
+    for (const item of itens) {
+      const produto = await Produto.findOne({ nome: item.nome });
+
+      if (!produto) continue;
+
+      if (produto.stock < item.qtd) {
+        return res.status(400).send(`Estoque insuficiente para ${produto.nome}`);
+      }
+
+      produto.stock -= item.qtd;
+      await produto.save();
+    }
+
+    // 📋 SALVAR PEDIDO
+    const novoPedido = new Pedido({
+      nome,
+      telefone,
+      endereco,
+      itens,
+      total,
+      data: new Date(),
+      status: "pendente",
+      usuarioId: req.usuario.id
+    });
+
+    await novoPedido.save();
+
+    res.send("Pedido salvo com sucesso 🛒");
+
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).send("Erro ao salvar pedido");
+  }
+});
+
+// =========================
+// 📦 LISTAR PEDIDOS
+// =========================
+app.get("/pedidos", verificarAdmin, async (req, res) => {
+  try {
+    const pedidos = await Pedido.find().sort({ data: -1 });
+    res.json(pedidos);
+  } catch (erro) {
+    res.status(500).send("Erro ao buscar pedidos");
+  }
+});
+
+// =========================
+// ✅ MARCAR COMO ENTREGUE
+// =========================
+app.put("/pedido/:id/entregue", verificarAdmin, async (req, res) => {
+  try {
+    await Pedido.findByIdAndUpdate(req.params.id, {
+      status: "entregue"
+    });
+
+    res.send("Pedido atualizado");
+  } catch (erro) {
+    res.status(500).send("Erro ao atualizar pedido");
+  }
+});
+
+// =========================
+// 🗑️ DELETAR PEDIDO
+// =========================
+app.delete("/pedido/:id",verificarAdmin, async (req, res) => {
+  try {
+    await Pedido.findByIdAndDelete(req.params.id);
+    res.send("Pedido deletado");
+  } catch (erro) {
+    res.status(500).send("Erro ao deletar pedido");
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+
+    const usuario = await Usuario.findOne({ email });
+
+if (!usuario) {
+  return res.status(400).send("Usuário não encontrado");
+}
+
+// 🔐 👇 AQUI FICA O IF
+const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+if (!senhaValida) {
+  return res.status(400).send("Senha incorreta");
+}
+
+    // 🔐 GERAR TOKEN
+    const token = jwt.sign(
+      { id: usuario._id, tipo: usuario.tipo },
+      SEGREDO,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      tipo: usuario.tipo
+    });
+
+  } catch (erro) {
+    res.status(500).send("Erro no login");
+  }
+});
+
+app.post("/cadastro", async (req, res) => {
+  try {
+    const { nome, email, senha, telefone } = req.body;
+
+    const existe = await Usuario.findOne({ email });
+
+    if (existe) {
+      return res.status(400).send("Email já cadastrado");
+    }
+
+    const senhaHash = await bcrypt.hash(senha, 10);
+
+    const novoUsuario = new Usuario({
+      nome,
+      email,
+      senha: senhaHash,
+      telefone,
+      tipo: "cliente"
+    });
+
+    await novoUsuario.save();
+
+    res.send("Cadastro realizado com sucesso 🎉");
+
+  } catch (erro) {
+    res.status(500).send("Erro ao cadastrar");
+  }
+});
+
+// =========================
+// 💳 CONFIRMAR PAGAMENTO
+// =========================
+app.put("/pedido/:id/pago", verificarAdmin, async (req, res) => {
+  try {
+    await Pedido.findByIdAndUpdate(req.params.id, {
+      statusPagamento: "pago"
+    });
+
+    res.send("Pagamento confirmado 💰");
+  } catch (erro) {
+    res.status(500).send("Erro ao confirmar pagamento");
+  }
+});
+
+// =========================
+// ⚠️ PRODUTOS COM ESTOQUE BAIXO
+// =========================
+app.get("/estoque-baixo",verificarAdmin, async (req, res) => {
+  try {
+    const produtos = await Produto.find({
+      $expr: { $lte: ["$stock", "$minStock"] }
+    });
+
+    res.json(produtos);
+  } catch (erro) {
+    res.status(500).send("Erro ao buscar estoque baixo");
+  }
+});
+
+// =========================
+// ✏️ ATUALIZAR PRODUTO
+// =========================
+app.put("/produto/:id", verificarAdmin, async (req, res) => {
+  try {
+    const { nome, preco, stock, imagem, promocao } = req.body;
+
+    await Produto.findByIdAndUpdate(req.params.id, {
+      nome,
+      preco,
+      stock,
+      imagem,
+      promocao
+    });
+
+    res.send("Produto atualizado ✏️");
+  } catch (erro) {
+    res.status(500).send("Erro ao atualizar produto");
+  }
+});
+
+// =========================
+// ❌ DELETAR PRODUTO
+// =========================
+app.delete("/produto/:id", verificarAdmin, async (req, res) => {
+  try {
+    await Produto.findByIdAndDelete(req.params.id);
+    res.send("Produto deletado 🗑️");
+  } catch (erro) {
+    res.status(500).send("Erro ao deletar produto");
+  }
+});
+
+// =========================
+// 👤 PEDIDOS DO USUÁRIO
+// =========================
+app.get("/meus-pedidos", verificarToken, async (req, res) => {
+  try {
+    const pedidos = await Pedido.find({
+      usuarioId: req.usuario.id
+    }).sort({ data: -1 });
+
+    res.json(pedidos);
+  } catch (erro) {
+    res.status(500).send("Erro ao buscar pedidos");
+  }
+});
+
+// =========================
+// 🚀 START SERVIDOR/tudo vai em cima dele
+// =========================
+app.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000 🚀");
+});

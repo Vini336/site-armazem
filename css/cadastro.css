@@ -1,0 +1,46 @@
+/* 🔥 FUNDO */
+body {
+  background: linear-gradient(135deg, #0a2a88, #1c3fd1);
+  margin: 0;
+  font-family: Arial, sans-serif;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* 🔥 CAIXA */
+.login-box {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* 🔥 INPUTS */
+.login-box input {
+  width: 100%;
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* 🔥 BOTÃO */
+.login-box button {
+  width: 100%;
+  padding: 12px;
+  background: #1c3fd1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.login-box button:hover {
+  background: #0a2a88;
+}

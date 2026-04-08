@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criar Conta - Armazém Hora Certa</title>
+
+  <link rel="stylesheet" href="css/cadastro.css">
+</head>
+<body>
+
+<div class="login-box" style="margin-top:50px;">
+  <h2>Criar Conta</h2>
+
+  <input type="text" id="nomeCadastro" placeholder="Seu nome">
+  <input type="email" id="emailCadastro" placeholder="Seu email">
+  <input type="password" id="senhaCadastro" placeholder="Sua senha">
+  <input type="text" id="telefoneCadastro" placeholder="Seu WhatsApp">
+
+  <button onclick="fazerCadastro()">Cadastrar</button>
+
+  <p id="mensagem" style="color:green; display:none; margin-top:10px;"></p>
+
+  <p style="margin-top:10px;">
+    Já tem conta?
+    <a href="index.html">Entrar</a>
+  </p>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+async function fazerCadastro() {
+  const nome = document.getElementById("nomeCadastro").value;
+  const email = document.getElementById("emailCadastro").value;
+  const senha = document.getElementById("senhaCadastro").value;
+  const telefone = document.getElementById("telefoneCadastro").value;
+
+  if (!nome || !email || !senha || !telefone) {
+    alert("Preencha todos os campos!");
+    return;
+  }
+
+  try {
+    const resposta = await fetch("http://localhost:3000/cadastro", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        nome,
+        email,
+        senha,
+        telefone
+      })
+    });
+
+// mensagem mais profissional
+const texto = await resposta.text();
+
+if (!resposta.ok) {
+  alert(texto); // mostra erro (ex: email já cadastrado)
+  return;
+}
+
+alert("Cadastro realizado com sucesso! 🎉");
+
+// espera 1.5s e redireciona
+setTimeout(() => {
+  window.location.href = "index.html";
+}, 1500);
+
+  } catch (erro) {
+    alert("Erro ao cadastrar");
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Meus Pedidos</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<h1>📦 Meus Pedidos</h1>
+
+<div id="listaPedidos"></div>
+
+<script>
+const token = localStorage.getItem("token");
+
+if (!token) {
+  alert("Faça login primeiro!");
+  window.location.href = "login.html";
+}
+
+// 🔥 CARREGAR PEDIDOS
+async function carregarMeusPedidos() {
+  const resposta = await fetch("http://localhost:3000/meus-pedidos", {
+    headers: {
+      Authorization: token
+    }
+  });
+
+  const pedidos = await resposta.json();
+
+  const div = document.getElementById("listaPedidos");
+
+  if (pedidos.length === 0) {
+    div.innerHTML = "<p>Você ainda não fez pedidos 😢</p>";
+    return;
+  }
+
+  let html = "";
+
+  pedidos.forEach(pedido => {
+    html += `
+      <div class="card-pedido">
+        <p><strong>Data:</strong> ${new Date(pedido.data).toLocaleString()}</p>
+        <p><strong>Total:</strong> R$ ${pedido.total}</p>
+
+        <p>
+          <strong>Pagamento:</strong>
+          <span class="${pedido.statusPagamento === 'pago' ? 'status-entregue' : 'status-pendente'}">
+            ${pedido.statusPagamento === 'pago' ? 'Pago' : 'Pendente'}
+          </span>
+        </p>
+
+        <p>
+          <strong>Status:</strong>
+          <span class="${pedido.status === 'entregue' ? 'status-entregue' : 'status-pendente'}">
+            ${pedido.status === 'entregue' ? 'Entregue' : 'Em andamento'}
+          </span>
+        </p>
+
+        <p><strong>Itens:</strong></p>
+        <ul>
+          ${pedido.itens.map(item => `<li>${item.nome} (x${item.qtd})</li>`).join("")}
+        </ul>
+      </div>
+    `;
+  });
+
+  div.innerHTML = html;
+}
+
+carregarMeusPedidos();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Armazém Hora Certa</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <img src="img/logo.png" class="logo" alt="Armazem hora certa">
+  
+  <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+  <div id="overlay" onclick="fecharMenu()"></div>
+  <nav id="menu">
+    <a href="#">Início</a>
+    <a href="#">Produtos</a>
+    <a href="meus-pedidos.html">
+  📦 Meus Pedidos
+    </a>
+
+    <input type="text" id="busca" placeholder="Buscar produtos...">
+
+    <span onclick="abrirLogin()" class="btn-login">Entrar</span>
+
+    <span onclick="abrirCarrinho()" class="btn-carrinho">
+      🛒 <span id="contadorCarrinho">0</span>
+    </span>
+  </nav>
+</header>
+
+<section class="banner">
+  <h2>🔥 Ofertas da Semana</h2>
+  <p>Os melhores preços você encontra aqui!</p>
+</section>
+<section class="beneficios">
+  <div>🚚 Entrega rápida</div>
+  <div>💰 Melhor preço da região</div>
+  <div>🔒 Compra segura</div>
+</section>
+
+<section class="produtos">
+   <h2>Nossos Produtos</h2>
+
+  <div id="listaProdutos" class="grid-produtos"></div>
+</section>
+
+
+<!-- 🔐 LOGIN -->
+<div id="loginModal" class="modal">
+   <div class="login-box">
+    <h2>Entrar</h2>
+    <p class="esqueceu" onclick="esqueceuSenha()">Esqueceu senha?</p>
+
+    <input type="email" id="emailModal" placeholder="Seu email">
+<input type="password" id="senhaModal" placeholder="Sua senha">
+
+<button type="button" onclick="fazerLogin()">Entrar</button>
+
+    <p style="margin-top:10px;">
+  Não tem conta?
+  <a href="cadastro.html">Criar conta</a>
+</p>
+
+    <span onclick="fecharLogin()" class="fechar">✖</span>
+  </div>
+</div>
+
+<!-- 🛒 CARRINHO (SEMPRE FORA) -->
+<div id="carrinhoLateral" class="carrinho">
+  <div class="carrinho-header">
+    <h3>Seu Carrinho</h3>
+    <span onclick="fecharCarrinho()" class="fechar">✖</span>
+  </div>
+
+  <div id="itensCarrinho"></div>
+
+  <div class="carrinho-footer">
+
+  <input type="text" id="nomeCliente" placeholder="Seu nome">
+  <input type="text" id="telefoneCliente" placeholder="Seu WhatsApp">
+  <input type="text" id="enderecoCliente" placeholder="Endereço de entrega">
+
+  <p id="subtotalValor">Subtotal: R$ 0</p>
+  <p id="freteValor">Frete: R$ 0</p>
+  <p id="totalFinal">Total: R$ 0</p>
+
+  <button onclick="usarLocalizacao()">📍 Usar minha localização</button>
+
+  <button onclick="limparCarrinho()">🗑️ Limpar carrinho</button>
+
+  <button onclick="finalizarCompra()" id="btnFinalizar">Finalizar Compra</button>
+
+</div>
+</div>
+
+<!--footer-->
+<footer class="footer">
+  <div>
+    <h3>Armazém Hora Certa</h3>
+    <p>Qualidade e confiança para sua obra.</p>
+  </div>
+
+  <div>
+    <p>📍 Recife - PE</p>
+    <p>📞 (81) 99999-9999</p>
+  </div>
+
+  <div>
+    <p>📲 Instagram</p>
+    <p>📲 WhatsApp</p>
+  </div>
+</footer>
+
+<!-- MENU APP -->
+<div class="menu-app">
+  <div onclick="window.scrollTo(0,0)">🏠 <span>Início</span></div>
+  <div onclick="document.getElementById('busca').focus()">🔍 <span>Buscar</span></div>
+  <div onclick="abrirCarrinho()">🛒 <span>Carrinho</span></div>
+  <div onclick="abrirLogin()">👤 <span>Conta</span></div>
+</div>
+
+<!-- BOTÃO CARRINHO -->
+<div class="btn-carrinho-flutuante" onclick="abrirCarrinho()">
+  🛒 <span id="contadorFlutuante">0</span>
+</div>
+
+<!-- JS -->
+<script src="js/login.js"></script>
+<script src="js/carrinho.js"></script>
+<script src="js/main.js"></script>
+
+<div id="notificacao" class="notificacao">
+  Produto adicionado ao carrinho 🛒
+</div>
+
+</body>
+</html>
