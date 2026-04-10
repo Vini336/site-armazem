@@ -11,6 +11,9 @@ const app = express();
 
 const SEGREDO = "segredo_super_forte_123";
 
+// =========================
+// 🔐 MIDDLEWARE TOKEN
+// =========================
 function verificarToken(req, res, next) {
   const token = req.headers.authorization;
 
@@ -22,7 +25,7 @@ function verificarToken(req, res, next) {
     const decoded = jwt.verify(token, SEGREDO);
     req.usuario = decoded;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).send("Token inválido ❌");
   }
 }
@@ -43,7 +46,7 @@ function verificarAdmin(req, res, next) {
 
     req.usuario = decoded;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).send("Token inválido ❌");
   }
 }
@@ -51,9 +54,9 @@ function verificarAdmin(req, res, next) {
 app.use(cors());
 app.use(express.json());
 
-// 🔗 CONEXÃO COM BANCO
-
+// =========================
 // 📦 MODELS
+// =========================
 const Produto = require("./models/produtos");
 const Pedido = require("./models/pedido");
 const Usuario = require("./models/usuario");
@@ -65,9 +68,8 @@ app.post("/produto", async (req, res) => {
   try {
     const novoProduto = new Produto(req.body);
     await novoProduto.save();
-
     res.send("Produto criado com sucesso 🔥");
-  } catch (erro) {
+  } catch {
     res.status(500).send("Erro ao criar produto");
   }
 });
@@ -86,19 +88,18 @@ app.get("/produtos", async (req, res) => {
       .limit(limite);
 
     res.json(produtos);
-  } catch (erro) {
+  } catch {
     res.status(500).send("Erro ao buscar produtos");
   }
 });
 
 // =========================
-// 🛒 CRIAR PEDIDO (COM ESTOQUE)
+// 🛒 CRIAR PEDIDO
 // =========================
 app.post("/pedido", verificarToken, async (req, res) => {
   try {
     const { nome, telefone, endereco, itens, total } = req.body;
 
-    // 🔥 CONTROLE DE ESTOQUE
     for (const item of itens) {
       const produto = await Produto.findOne({ nome: item.nome });
 
@@ -112,7 +113,6 @@ app.post("/pedido", verificarToken, async (req, res) => {
       await produto.save();
     }
 
-    // 📋 SALVAR PEDIDO
     const novoPedido = new Pedido({
       nome,
       telefone,
@@ -141,72 +141,112 @@ app.get("/pedidos", verificarAdmin, async (req, res) => {
   try {
     const pedidos = await Pedido.find().sort({ data: -1 });
     res.json(pedidos);
-  } catch (erro) {
+  } catch {
     res.status(500).send("Erro ao buscar pedidos");
   }
 });
 
 // =========================
-// ✅ MARCAR COMO ENTREGUE
+// 📦 STATUS DE PEDIDO
 // =========================
+
+// ✅ ENTREGUE
 app.put("/pedido/:id/entregue", verificarAdmin, async (req, res) => {
   try {
     await Pedido.findByIdAndUpdate(req.params.id, {
       status: "entregue"
     });
+    res.send("Pedido entregue");
+  } catch {
+    res.status(500).send("Erro");
+  }
+});
 
-    res.send("Pedido atualizado");
-  } catch (erro) {
-    res.status(500).send("Erro ao atualizar pedido");
+// 📦 SEPARANDO
+app.put("/pedido/:id/separando", verificarAdmin, async (req, res) => {
+  try {
+    await Pedido.findByIdAndUpdate(req.params.id, {
+      status: "separando"
+    });
+    res.send("Pedido em separação");
+  } catch {
+    res.status(500).send("Erro");
+  }
+});
+
+// 🚚 SAIU PARA ENTREGA
+app.put("/pedido/:id/saiu", verificarAdmin, async (req, res) => {
+  try {
+    await Pedido.findByIdAndUpdate(req.params.id, {
+      status: "saiu_entrega"
+    });
+    res.send("Saiu para entrega");
+  } catch {
+    res.status(500).send("Erro");
+  }
+});
+
+// =========================
+// 💳 PAGAMENTO
+// =========================
+app.put("/pedido/:id/pago", verificarAdmin, async (req, res) => {
+  try {
+    await Pedido.findByIdAndUpdate(req.params.id, {
+      statusPagamento: "pago"
+    });
+    res.send("Pagamento confirmado 💰");
+  } catch {
+    res.status(500).send("Erro");
   }
 });
 
 // =========================
 // 🗑️ DELETAR PEDIDO
 // =========================
-app.delete("/pedido/:id",verificarAdmin, async (req, res) => {
+app.delete("/pedido/:id", verificarAdmin, async (req, res) => {
   try {
     await Pedido.findByIdAndDelete(req.params.id);
     res.send("Pedido deletado");
-  } catch (erro) {
-    res.status(500).send("Erro ao deletar pedido");
+  } catch {
+    res.status(500).send("Erro");
   }
 });
 
+// =========================
+// 👤 LOGIN
+// =========================
 app.post("/login", async (req, res) => {
   try {
     const { email, senha } = req.body;
 
     const usuario = await Usuario.findOne({ email });
 
-if (!usuario) {
-  return res.status(400).send("Usuário não encontrado");
-}
+    if (!usuario) {
+      return res.status(400).send("Usuário não encontrado");
+    }
 
-// 🔐 👇 AQUI FICA O IF
-const senhaValida = await bcrypt.compare(senha, usuario.senha);
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
-if (!senhaValida) {
-  return res.status(400).send("Senha incorreta");
-}
+    if (!senhaValida) {
+      return res.status(400).send("Senha incorreta");
+    }
 
-    // 🔐 GERAR TOKEN
     const token = jwt.sign(
       { id: usuario._id, tipo: usuario.tipo },
       SEGREDO,
       { expiresIn: "7d" }
     );
 
-    res.json({
-      token,
-      tipo: usuario.tipo
-    });
+    res.json({ token, tipo: usuario.tipo });
 
-  } catch (erro) {
+  } catch {
     res.status(500).send("Erro no login");
   }
 });
 
+// =========================
+// 👤 CADASTRO
+// =========================
 app.post("/cadastro", async (req, res) => {
   try {
     const { nome, email, senha, telefone } = req.body;
@@ -231,76 +271,13 @@ app.post("/cadastro", async (req, res) => {
 
     res.send("Cadastro realizado com sucesso 🎉");
 
-  } catch (erro) {
+  } catch {
     res.status(500).send("Erro ao cadastrar");
   }
 });
 
 // =========================
-// 💳 CONFIRMAR PAGAMENTO
-// =========================
-app.put("/pedido/:id/pago", verificarAdmin, async (req, res) => {
-  try {
-    await Pedido.findByIdAndUpdate(req.params.id, {
-      statusPagamento: "pago"
-    });
-
-    res.send("Pagamento confirmado 💰");
-  } catch (erro) {
-    res.status(500).send("Erro ao confirmar pagamento");
-  }
-});
-
-// =========================
-// ⚠️ PRODUTOS COM ESTOQUE BAIXO
-// =========================
-app.get("/estoque-baixo",verificarAdmin, async (req, res) => {
-  try {
-    const produtos = await Produto.find({
-      $expr: { $lte: ["$stock", "$minStock"] }
-    });
-
-    res.json(produtos);
-  } catch (erro) {
-    res.status(500).send("Erro ao buscar estoque baixo");
-  }
-});
-
-// =========================
-// ✏️ ATUALIZAR PRODUTO
-// =========================
-app.put("/produto/:id", verificarAdmin, async (req, res) => {
-  try {
-    const { nome, preco, stock, imagem, promocao } = req.body;
-
-    await Produto.findByIdAndUpdate(req.params.id, {
-      nome,
-      preco,
-      stock,
-      imagem,
-      promocao
-    });
-
-    res.send("Produto atualizado ✏️");
-  } catch (erro) {
-    res.status(500).send("Erro ao atualizar produto");
-  }
-});
-
-// =========================
-// ❌ DELETAR PRODUTO
-// =========================
-app.delete("/produto/:id", verificarAdmin, async (req, res) => {
-  try {
-    await Produto.findByIdAndDelete(req.params.id);
-    res.send("Produto deletado 🗑️");
-  } catch (erro) {
-    res.status(500).send("Erro ao deletar produto");
-  }
-});
-
-// =========================
-// 👤 PEDIDOS DO USUÁRIO
+// 📦 MEUS PEDIDOS
 // =========================
 app.get("/meus-pedidos", verificarToken, async (req, res) => {
   try {
@@ -309,13 +286,82 @@ app.get("/meus-pedidos", verificarToken, async (req, res) => {
     }).sort({ data: -1 });
 
     res.json(pedidos);
-  } catch (erro) {
+  } catch {
     res.status(500).send("Erro ao buscar pedidos");
   }
 });
 
 // =========================
-// 🚀 START SERVIDOR/tudo vai em cima dele
+// 📊 DASHBOARD
+// =========================
+app.get("/dashboard", verificarAdmin, async (req, res) => {
+  try {
+    const pedidos = await Pedido.find();
+
+    const inicioHoje = new Date();
+    inicioHoje.setHours(0, 0, 0, 0);
+
+    const inicioSemana = new Date();
+    inicioSemana.setDate(inicioSemana.getDate() - 7);
+
+    let totalHoje = 0;
+    let totalSemana = 0;
+    let pedidosHoje = 0;
+
+    const produtosVendidos = {};
+
+    pedidos.forEach(p => {
+      const data = new Date(p.data);
+
+      // 📅 HOJE
+      if (data >= inicioHoje) {
+        totalHoje += p.total;
+        pedidosHoje++;
+      }
+
+      // 📅 SEMANA
+      if (data >= inicioSemana) {
+        totalSemana += p.total;
+      }
+
+      // 🛒 PRODUTOS
+      p.itens.forEach(item => {
+        produtosVendidos[item.nome] =
+          (produtosVendidos[item.nome] || 0) + item.qtd;
+      });
+    });
+
+    // 🏆 MAIS VENDIDO
+    let maisVendido = "Nenhum";
+    let max = 0;
+
+    for (let nome in produtosVendidos) {
+      if (produtosVendidos[nome] > max) {
+        max = produtosVendidos[nome];
+        maisVendido = nome;
+      }
+    }
+
+    // 📉 TICKET MÉDIO
+    const ticketMedio = pedidos.length
+      ? pedidos.reduce((acc, p) => acc + p.total, 0) / pedidos.length
+      : 0;
+
+    res.json({
+      totalHoje,
+      totalSemana,
+      pedidosHoje,
+      maisVendido,
+      ticketMedio
+    });
+
+  } catch (erro) {
+    res.status(500).send("Erro no dashboard");
+  }
+});
+
+// =========================
+// 🚀 START
 // =========================
 app.listen(3000, () => {
   console.log("Servidor rodando na porta 3000 🚀");
