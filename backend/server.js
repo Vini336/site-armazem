@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 // 🔗 CONEXÃO COM BANCO
 require("./database/db");
 
@@ -9,7 +11,7 @@ const bcrypt = require("bcryptjs");
 
 const app = express();
 
-const SEGREDO = "segredo_super_forte_123";
+const SEGREDO = process.env.JWT_SECRET;
 
 // =========================
 // 🔐 MIDDLEWARE TOKEN
@@ -69,7 +71,8 @@ app.post("/produto", async (req, res) => {
     const novoProduto = new Produto(req.body);
     await novoProduto.save();
     res.send("Produto criado com sucesso 🔥");
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro ao criar produto");
   }
 });
@@ -88,27 +91,49 @@ app.get("/produtos", async (req, res) => {
       .limit(limite);
 
     res.json(produtos);
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro ao buscar produtos");
   }
 });
 
 // =========================
-// 🛒 CRIAR PEDIDO
+// 🛒 CRIAR PEDIDO (BLINDADO)
 // =========================
 app.post("/pedido", verificarToken, async (req, res) => {
   try {
-    const { nome, telefone, endereco, itens, total } = req.body;
+    const { nome, telefone, endereco, itens, tipoEntrega } = req.body;
 
+    // ✅ VALIDAÇÃO
+    if (!nome || !telefone || !endereco || !itens || itens.length === 0) {
+      return res.status(400).send("Dados inválidos ❌");
+    }
+    if (!nome || !telefone || !itens || itens.length === 0) {
+  return res.status(400).send("Dados inválidos ❌");
+}
+
+    // só exige endereço se for entrega
+    if (tipoEntrega === "entrega" && !endereco) {
+    return res.status(400).send("Endereço obrigatório para entrega");
+    }
+
+    let totalCalculado = 0;
+
+    // 🔥 CALCULAR TOTAL REAL (ANTI-FRAUDE)
     for (const item of itens) {
       const produto = await Produto.findOne({ nome: item.nome });
 
-      if (!produto) continue;
+      if (!produto) {
+        return res.status(400).send(`Produto não encontrado: ${item.nome}`);
+      }
 
       if (produto.stock < item.qtd) {
         return res.status(400).send(`Estoque insuficiente para ${produto.nome}`);
       }
 
+      totalCalculado += produto.preco * item.qtd;
+
+      // desconta estoque
       produto.stock -= item.qtd;
       await produto.save();
     }
@@ -118,7 +143,7 @@ app.post("/pedido", verificarToken, async (req, res) => {
       telefone,
       endereco,
       itens,
-      total,
+      total: totalCalculado, // 🔥 usa valor seguro
       data: new Date(),
       status: "pendente",
       usuarioId: req.usuario.id
@@ -141,7 +166,8 @@ app.get("/pedidos", verificarAdmin, async (req, res) => {
   try {
     const pedidos = await Pedido.find().sort({ data: -1 });
     res.json(pedidos);
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro ao buscar pedidos");
   }
 });
@@ -149,39 +175,38 @@ app.get("/pedidos", verificarAdmin, async (req, res) => {
 // =========================
 // 📦 STATUS DE PEDIDO
 // =========================
-
-// ✅ ENTREGUE
 app.put("/pedido/:id/entregue", verificarAdmin, async (req, res) => {
   try {
     await Pedido.findByIdAndUpdate(req.params.id, {
       status: "entregue"
     });
     res.send("Pedido entregue");
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro");
   }
 });
 
-// 📦 SEPARANDO
 app.put("/pedido/:id/separando", verificarAdmin, async (req, res) => {
   try {
     await Pedido.findByIdAndUpdate(req.params.id, {
       status: "separando"
     });
     res.send("Pedido em separação");
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro");
   }
 });
 
-// 🚚 SAIU PARA ENTREGA
 app.put("/pedido/:id/saiu", verificarAdmin, async (req, res) => {
   try {
     await Pedido.findByIdAndUpdate(req.params.id, {
       status: "saiu_entrega"
     });
     res.send("Saiu para entrega");
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro");
   }
 });
@@ -195,7 +220,8 @@ app.put("/pedido/:id/pago", verificarAdmin, async (req, res) => {
       statusPagamento: "pago"
     });
     res.send("Pagamento confirmado 💰");
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro");
   }
 });
@@ -207,7 +233,8 @@ app.delete("/pedido/:id", verificarAdmin, async (req, res) => {
   try {
     await Pedido.findByIdAndDelete(req.params.id);
     res.send("Pedido deletado");
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro");
   }
 });
@@ -239,7 +266,8 @@ app.post("/login", async (req, res) => {
 
     res.json({ token, tipo: usuario.tipo });
 
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro no login");
   }
 });
@@ -250,6 +278,10 @@ app.post("/login", async (req, res) => {
 app.post("/cadastro", async (req, res) => {
   try {
     const { nome, email, senha, telefone } = req.body;
+
+    if (!nome || !email || !senha || !telefone) {
+      return res.status(400).send("Preencha todos os campos");
+    }
 
     const existe = await Usuario.findOne({ email });
 
@@ -271,7 +303,8 @@ app.post("/cadastro", async (req, res) => {
 
     res.send("Cadastro realizado com sucesso 🎉");
 
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro ao cadastrar");
   }
 });
@@ -286,7 +319,8 @@ app.get("/meus-pedidos", verificarToken, async (req, res) => {
     }).sort({ data: -1 });
 
     res.json(pedidos);
-  } catch {
+  } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro ao buscar pedidos");
   }
 });
@@ -313,25 +347,21 @@ app.get("/dashboard", verificarAdmin, async (req, res) => {
     pedidos.forEach(p => {
       const data = new Date(p.data);
 
-      // 📅 HOJE
       if (data >= inicioHoje) {
         totalHoje += p.total;
         pedidosHoje++;
       }
 
-      // 📅 SEMANA
       if (data >= inicioSemana) {
         totalSemana += p.total;
       }
 
-      // 🛒 PRODUTOS
       p.itens.forEach(item => {
         produtosVendidos[item.nome] =
           (produtosVendidos[item.nome] || 0) + item.qtd;
       });
     });
 
-    // 🏆 MAIS VENDIDO
     let maisVendido = "Nenhum";
     let max = 0;
 
@@ -342,7 +372,6 @@ app.get("/dashboard", verificarAdmin, async (req, res) => {
       }
     }
 
-    // 📉 TICKET MÉDIO
     const ticketMedio = pedidos.length
       ? pedidos.reduce((acc, p) => acc + p.total, 0) / pedidos.length
       : 0;
@@ -356,6 +385,7 @@ app.get("/dashboard", verificarAdmin, async (req, res) => {
     });
 
   } catch (erro) {
+    console.error(erro);
     res.status(500).send("Erro no dashboard");
   }
 });

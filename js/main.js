@@ -157,7 +157,14 @@ async function finalizarCompra() {
 
   const nome = document.getElementById("nomeCliente").value.trim();
   const telefone = document.getElementById("telefoneCliente").value.trim();
-  const endereco = document.getElementById("enderecoCliente").value.trim();
+  let endereco = document.getElementById("enderecoCliente").value.trim();
+
+// 🚚 / 🏪 TIPO DE ENTREGA
+const tipoEntrega = document.querySelector('input[name="tipoEntrega"]:checked').value;
+
+if (tipoEntrega === "retirada") {
+  endereco = "";
+}
 
   // validações
   if (nome.length < 3) {
@@ -176,8 +183,8 @@ async function finalizarCompra() {
     return;
   }
 
-  if (endereco.length < 5) {
-    alert("Digite um endereço completo!");
+  if (tipoEntrega === "entrega" && endereco.length < 5) {
+  alert("Digite um endereço completo!");
 
     btn.disabled = false;
     btn.innerText = "Finalizar Compra";
@@ -239,7 +246,8 @@ const Token = localStorage.getItem("token");
       endereco,
       itens: carrinho,
       total: totalFinal,
-      frete
+      frete,
+      tipoEntrega
     })
   });
 
