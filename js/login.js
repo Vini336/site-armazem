@@ -1,4 +1,3 @@
-const API = "http://localhost:3000";
 
 function abrirLogin() {
   document.getElementById("loginModal").classList.add("ativo");

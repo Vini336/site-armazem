@@ -1,4 +1,9 @@
 const API = "http://localhost:3000";
+
+let pagina = 1;
+let carregando = false;
+let acabou = false;
+
 // 🔥 QUANDO SITE CARREGAR
 document.addEventListener("DOMContentLoaded", () => {
   console.log("Site carregado 🚀");
