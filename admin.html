@@ -10,258 +10,70 @@
 
 <h1>📦 Pedidos</h1>
 
-<!-- 🔴 CONTADOR -->
-<div id="contadorNovos" style="
-  background:#ff3b3b;
-  color:white;
-  padding:10px;
-  border-radius:8px;
-  text-align:center;
-  font-weight:bold;
-  margin:10px;
-  display:none;
-">
-  🔴 0 pedidos novos
-</div>
-
-<!-- DASHBOARD -->
-<div class="dashboard">
-  <div class="card">💰 Hoje<br><span id="hoje">0</span></div>
-  <div class="card">📅 Semana<br><span id="semana">0</span></div>
-  <div class="card">📦 Pedidos Hoje<br><span id="pedidosHoje">0</span></div>
-  <div class="card">🏆 Mais vendido<br><span id="maisVendido">-</span></div>
-  <div class="card">📉 Ticket médio<br><span id="ticket">0</span></div>
-</div>
-
-<!-- FILTRO -->
-<div style="margin:15px;">
-  <button onclick="filtrarPedidos('todos')">Todos</button>
-  <button onclick="filtrarPedidos('pendente')">Pendentes</button>
-  <button onclick="filtrarPedidos('entregue')">Entregues</button>
-
-  <input 
-    type="text" 
-    id="buscaPedido" 
-    placeholder="Buscar..."
-    oninput="carregarPedidos()"
-    style="margin-left:10px; padding:8px; border-radius:6px;"
-  >
-</div>
-
-<!-- LISTA -->
-<div id="listaPedidos"></div>
-
-<!-- NOTIF -->
-<div id="notifAdmin" class="notif-admin">
-  🛒 Novo pedido recebido!
-</div>
-
-<!-- SOM -->
-<audio id="somPedido">
-  <source src="https://www.soundjay.com/buttons/sounds/button-3.mp3" type="audio/mpeg">
-</audio>
+<h1>🛠 Produtos</h1>
+<div id="listaProdutos"></div>
 
 <script>
-const API = "http://localhost:3000";
-const token = localStorage.getItem("token");
-const tipo = localStorage.getItem("tipo");
+const API = "https://site-armazem.onrender.com";
 
-if (tipo !== "admin") {
-  alert("Acesso negado 🚫");
-  window.location.href = "index.html";
-}
-
-let filtroAtual = "todos";
-let pedidosVistos = 0;
-
-// DASHBOARD
-async function carregarDashboard() {
-  const resposta = await fetch(`${API}/dashboard`, {
-    headers: { Authorization: token }
-  });
-
-  const data = await resposta.json();
-
-  document.getElementById("hoje").innerText = "R$ " + data.totalHoje.toFixed(2);
-  document.getElementById("semana").innerText = "R$ " + data.totalSemana.toFixed(2);
-  document.getElementById("pedidosHoje").innerText = data.pedidosHoje;
-  document.getElementById("maisVendido").innerText = data.maisVendido;
-  document.getElementById("ticket").innerText = "R$ " + data.ticketMedio.toFixed(2);
-}
-
-// FILTRO
-function filtrarPedidos(filtro) {
-  filtroAtual = filtro;
-  carregarPedidos();
-}
-
-// CARREGAR PEDIDOS
-async function carregarPedidos() {
-  const resposta = await fetch(`${API}/pedidos`, {
-    headers: { Authorization: token }
-  });
-
-  const pedidos = await resposta.json();
-
-  if (pedidosVistos === 0) {
-    pedidosVistos = pedidos.length;
-  }
-
-  if (pedidos.length > pedidosVistos) {
-    const novos = pedidos.length - pedidosVistos;
-    mostrarNotificacao(pedidos[0].nome);
-    atualizarContador(novos);
-  }
+// =========================
+// 📦 LISTAR PRODUTOS
+// =========================
+async function carregarProdutosAdmin() {
+  const resposta = await fetch(`${API}/produtos`);
+  const produtos = await resposta.json();
 
   let html = "";
 
-  pedidos.forEach((p, index) => {
-
-    if (filtroAtual !== "todos" && p.status !== filtroAtual) return;
-
-    const statusTexto = {
-      pendente: "⏳ Pendente",
-      separando: "📦 Separando",
-      saiu: "🚚 Saiu para entrega",
-      entregue: "✅ Entregue"
-    };
-
-    const tempo = calcularTempo(p.data);
-    const urgencia = calcularUrgencia(p.data);
-
-    // 🔥 NOVO (TIPO)
-    const tipoClasse = p.tipoEntrega === "retirada" ? "retirada" : "entrega";
-
-    const classeNovo = index === 0 ? "novo" : "";
-
-    const classeFinal = `${classeNovo} ${urgencia} ${tipoClasse}`;
-
+  produtos.forEach(p => {
     html += `
-    <div class="card-pedido ${classeFinal}">
-      <p><strong>${p.nome}</strong> • 🕒 ${tempo}</p>
+      <div style="
+        background:#fff;
+        padding:15px;
+        margin:10px;
+        border-radius:8px;
+      ">
+        <strong>${p.nome}</strong><br>
+        💰 R$ ${p.preco}
 
-      <p>R$ ${p.total}</p>
-
-      <p>
-        <strong>Tipo:</strong> 
-        ${p.tipoEntrega === "retirada" 
-          ? "🏪 Retirada na loja" 
-          : "🚚 Entrega"}
-      </p>
-
-      <p><strong>Status:</strong> ${statusTexto[p.status]}</p>
-
-      <div style="margin-top:10px;">
-        <button onclick="atualizarStatus('${p._id}', 'separando')">📦</button>
-        <button onclick="atualizarStatus('${p._id}', 'saiu')">🚚</button>
-        <button onclick="atualizarStatus('${p._id}', 'entregue')">✅</button>
-        <button onclick="confirmarPagamento('${p._id}')">💳</button>
-        <button onclick="deletarPedido('${p._id}')">🗑️</button>
+        <div style="margin-top:10px;">
+          <button onclick="editarProduto('${p._id}')">
+            ✏️ Editar preço
+          </button>
+        </div>
       </div>
-    </div>
     `;
   });
 
-  document.getElementById("listaPedidos").innerHTML = html;
-
-  pedidosVistos = pedidos.length;
-  document.getElementById("contadorNovos").style.display = "none";
+  document.getElementById("listaProdutos").innerHTML = html;
 }
 
-// STATUS
-async function atualizarStatus(id, tipo) {
-  await fetch(`${API}/pedido/${id}/${tipo}`, {
+// =========================
+// ✏️ EDITAR PREÇO
+// =========================
+async function editarProduto(id) {
+  const novoPreco = prompt("Digite o novo preço:");
+
+  if (!novoPreco) return;
+
+  await fetch(`${API}/produtos/${id}`, {
     method: "PUT",
-    headers: { Authorization: token }
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      preco: Number(novoPreco)
+    })
   });
 
-  carregarPedidos();
+  alert("Preço atualizado!");
+  carregarProdutosAdmin();
 }
 
-// PAGAMENTO
-async function confirmarPagamento(id) {
-  await fetch(`${API}/pedido/${id}/pago`, {
-    method: "PUT",
-    headers: { Authorization: token }
-  });
-
-  carregarPedidos();
-}
-
-// DELETE
-async function deletarPedido(id) {
-  await fetch(`${API}/pedido/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: token }
-  });
-
-  carregarPedidos();
-}
-
-// NOTIFICAÇÃO
-function mostrarNotificacao(nomeCliente) {
-  const notif = document.getElementById("notifAdmin");
-  const som = document.getElementById("somPedido");
-
-  notif.innerText = `🛒 Novo pedido de ${nomeCliente}!`;
-
-  notif.classList.add("ativo");
-
-  if (som) {
-    som.currentTime = 0;
-    som.play();
-  }
-
-  setTimeout(() => {
-    notif.classList.remove("ativo");
-  }, 3000);
-}
-
-// CONTADOR
-function atualizarContador(qtd) {
-  const contador = document.getElementById("contadorNovos");
-
-  contador.style.display = "block";
-  contador.innerText = `🔴 ${qtd} pedido(s) novo(s)`;
-}
-
-function calcularTempo(dataPedido) {
-  const agora = new Date();
-  const data = new Date(dataPedido);
-
-  const diff = Math.floor((agora - data) / 1000);
-
-  if (diff < 60) return "agora mesmo";
-
-  const minutos = Math.floor(diff / 60);
-  if (minutos < 60) return `há ${minutos} min`;
-
-  const horas = Math.floor(minutos / 60);
-  if (horas < 24) return `há ${horas}h`;
-
-  const dias = Math.floor(horas / 24);
-  return `há ${dias}d`;
-}
-
-function calcularUrgencia(dataPedido) {
-  const agora = new Date();
-  const data = new Date(dataPedido);
-
-  const diffMin = (agora - data) / 1000 / 60;
-
-  if (diffMin > 10) return "urgente";
-  if (diffMin > 5) return "atencao";
-  return "";
-}
-
-// INICIAR
-carregarPedidos();
-carregarDashboard();
-
-setInterval(() => {
-  carregarPedidos();
-  carregarDashboard();
-}, 5000);
+// =========================
+// 🚀 INICIAR
+// =========================
+carregarProdutosAdmin();
 </script>
 
 </body>

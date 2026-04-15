@@ -7,57 +7,20 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const path = require("path");
 
 const app = express();
 
 const SEGREDO = process.env.JWT_SECRET;
 
-// =========================
-// 🔐 MIDDLEWARE TOKEN
-// =========================
-function verificarToken(req, res, next) {
-  const token = req.headers.authorization;
-
-  if (!token) return res.status(401).send("Acesso negado 🔒");
-
-  try {
-    const decoded = jwt.verify(token, SEGREDO);
-    req.usuario = decoded;
-    next();
-  } catch {
-    return res.status(401).send("Token inválido ❌");
-  }
-}
-
-function verificarAdmin(req, res, next) {
-  const token = req.headers.authorization;
-
-  if (!token) return res.status(401).send("Acesso negado 🔒");
-
-  try {
-    const decoded = jwt.verify(token, SEGREDO);
-
-    if (decoded.tipo !== "admin") {
-      return res.status(403).send("Apenas administradores 🚫");
-    }
-
-    req.usuario = decoded;
-    next();
-  } catch {
-    return res.status(401).send("Token inválido ❌");
-  }
-}
-
 app.use(cors());
 app.use(express.json());
 
-const path = require("path");
-
-// servir arquivos estáticos (frontend)
+// servir frontend
 app.use(express.static(path.join(__dirname, "../")));
 
 // =========================
-// 🔥 ROTA PRINCIPAL (IMPORTANTE)
+// 🔥 ROTA PRINCIPAL
 // =========================
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../index.html"));
@@ -79,6 +42,25 @@ app.get("/produtos", async (req, res) => {
     res.json(produtos);
   } catch (erro) {
     res.status(500).send("Erro ao buscar produtos");
+  }
+});
+
+// =========================
+// ✏️ ATUALIZAR PRODUTO
+// =========================
+app.put("/produtos/:id", async (req, res) => {
+  try {
+    const { nome, preco, imagem } = req.body;
+
+    const produtoAtualizado = await Produto.findByIdAndUpdate(
+      req.params.id,
+      { nome, preco, imagem },
+      { new: true }
+    );
+
+    res.json(produtoAtualizado);
+  } catch (erro) {
+    res.status(500).send("Erro ao atualizar produto");
   }
 });
 
@@ -111,7 +93,7 @@ app.post("/login", async (req, res) => {
 });
 
 // =========================
-// 🚀 PORTA CORRETA (ESSENCIAL)
+// 🚀 PORTA
 // =========================
 const PORT = process.env.PORT || 3000;
 
