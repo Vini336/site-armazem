@@ -51,11 +51,16 @@ function verificarAdmin(req, res, next) {
 app.use(cors());
 app.use(express.json());
 
+const path = require("path");
+
+// servir arquivos estáticos (frontend)
+app.use(express.static(path.join(__dirname, "../")));
+
 // =========================
 // 🔥 ROTA PRINCIPAL (IMPORTANTE)
 // =========================
 app.get("/", (req, res) => {
-  res.send("API do Armazém Hora Certa rodando 🚀");
+  res.sendFile(path.join(__dirname, "../index.html"));
 });
 
 // =========================
