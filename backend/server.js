@@ -68,8 +68,19 @@ const Produto = require("./models/produtos");
 // LISTAR
 // =====================
 app.get("/produtos", async (req, res) => {
-  const produtos = await Produto.find();
-  res.json(produtos);
+  const pagina = Number(req.query.page) || 1;
+  const limite = 6;
+
+  const produtos = await Produto.find()
+    .skip((pagina - 1) * limite)
+    .limit(limite);
+
+  const total = await Produto.countDocuments();
+
+  res.json({
+    produtos,
+    totalPaginas: Math.ceil(total / limite)
+  });
 });
 
 // =====================

@@ -1,10 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById("listaProdutos");
+    const paginacao = document.getElementById("paginacao");
+
+    let paginaAtual = 1;
 
     async function carregarProdutos() {
         try {
-            const resposta = await fetch("https://site-armazem.onrender.com/produtos");
-            const produtos = await resposta.json();
+            const resposta = await fetch(
+                `https://site-armazem.onrender.com/produtos?page=${paginaAtual}`
+            );
+
+            const data = await resposta.json();
+            const produtos = data.produtos;
 
             console.log("Produtos recebidos:", produtos);
 
@@ -16,14 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             produtos.forEach(produto => {
-                console.log("Produto individual:", produto);
-
                 const nome = produto.nome || "Sem nome";
-
-                // 🔥 garante preço correto
                 const preco = Number(produto.preco) || 0;
 
-                // 🔥 corrige imagem (evita 404)
                 const imagem = (produto.imagem && produto.imagem.startsWith("http"))
                     ? produto.imagem
                     : "https://i.imgur.com/1X6ZQZg.png";
@@ -43,9 +45,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 container.appendChild(card);
             });
 
+            criarPaginacao(data.totalPaginas);
+
         } catch (erro) {
             console.error("Erro ao carregar produtos:", erro);
             container.innerHTML = "<p>Erro ao carregar produtos</p>";
+        }
+    }
+
+    function criarPaginacao(totalPaginas) {
+        paginacao.innerHTML = "";
+
+        for (let i = 1; i <= totalPaginas; i++) {
+            const btn = document.createElement("button");
+            btn.innerText = i;
+
+            if (i === paginaAtual) {
+                btn.style.background = "#ffd700";
+            }
+
+            btn.onclick = () => {
+                paginaAtual = i;
+                carregarProdutos();
+            };
+
+            paginacao.appendChild(btn);
         }
     }
 
