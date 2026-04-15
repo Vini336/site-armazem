@@ -1,79 +1,143 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Painel Admin</title>
-  <link rel="stylesheet" href="css/admin.css">
+<meta charset="UTF-8">
+<title>Admin</title>
+
+<style>
+body {
+  background: #0d2c8b;
+  color: white;
+  font-family: Arial;
+}
+
+.container {
+  max-width: 900px;
+  margin: auto;
+}
+
+.card {
+  background: white;
+  color: black;
+  padding: 15px;
+  margin: 10px;
+  border-radius: 10px;
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  width: 100%;
+}
+
+button {
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+img {
+  width: 100px;
+}
+</style>
+
 </head>
 
 <body>
 
-<h1>📦 Pedidos</h1>
+<div class="container">
 
-<h1>🛠 Produtos</h1>
-<div id="listaProdutos"></div>
+<h1>🛠 Admin Produtos</h1>
+
+<div class="card">
+  <h3>Novo Produto</h3>
+  <input id="nome" placeholder="Nome">
+  <input id="preco" placeholder="Preço">
+  <input id="estoque" placeholder="Estoque">
+  <input type="file" id="imagem">
+
+  <button onclick="criar()">➕ Criar</button>
+</div>
+
+<div id="lista"></div>
+
+</div>
 
 <script>
 const API = "https://site-armazem.onrender.com";
 
-// =========================
-// 📦 LISTAR PRODUTOS
-// =========================
-async function carregarProdutosAdmin() {
-  const resposta = await fetch(`${API}/produtos`);
-  const produtos = await resposta.json();
+// LISTAR
+async function carregar() {
+  const res = await fetch(API + "/produtos");
+  const produtos = await res.json();
 
   let html = "";
 
   produtos.forEach(p => {
     html += `
-      <div style="
-        background:#fff;
-        padding:15px;
-        margin:10px;
-        border-radius:8px;
-      ">
-        <strong>${p.nome}</strong><br>
-        💰 R$ ${p.preco}
+      <div class="card">
+        <img src="${p.imagem}" />
+        <h3>${p.nome}</h3>
+        💰 R$ ${p.preco} <br>
+        📦 Estoque: ${p.estoque || 0}
 
-        <div style="margin-top:10px;">
-          <button onclick="editarProduto('${p._id}')">
-            ✏️ Editar preço
-          </button>
-        </div>
+        <br>
+
+        <button onclick="editar('${p._id}')">✏️</button>
+        <button onclick="deletar('${p._id}')">🗑</button>
       </div>
     `;
   });
 
-  document.getElementById("listaProdutos").innerHTML = html;
+  document.getElementById("lista").innerHTML = html;
 }
 
-// =========================
-// ✏️ EDITAR PREÇO
-// =========================
-async function editarProduto(id) {
-  const novoPreco = prompt("Digite o novo preço:");
+// CRIAR COM IMAGEM
+async function criar() {
+  const form = new FormData();
 
-  if (!novoPreco) return;
+  form.append("nome", document.getElementById("nome").value);
+  form.append("preco", document.getElementById("preco").value);
+  form.append("estoque", document.getElementById("estoque").value);
+  form.append("imagem", document.getElementById("imagem").files[0]);
 
-  await fetch(`${API}/produtos/${id}`, {
+  await fetch(API + "/produtos", {
+    method: "POST",
+    body: form
+  });
+
+  carregar();
+}
+
+// EDITAR
+async function editar(id) {
+  const preco = prompt("Novo preço:");
+  const estoque = prompt("Novo estoque:");
+
+  await fetch(API + "/produtos/" + id, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      preco: Number(novoPreco)
+      preco: Number(preco),
+      estoque: Number(estoque)
     })
   });
 
-  alert("Preço atualizado!");
-  carregarProdutosAdmin();
+  carregar();
 }
 
-// =========================
-// 🚀 INICIAR
-// =========================
-carregarProdutosAdmin();
+// DELETE
+async function deletar(id) {
+  if (!confirm("Deletar?")) return;
+
+  await fetch(API + "/produtos/" + id, {
+    method: "DELETE"
+  });
+
+  carregar();
+}
+
+carregar();
 </script>
 
 </body>

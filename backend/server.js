@@ -1,102 +1,98 @@
 require('dotenv').config();
 
-// 🔗 CONEXÃO COM BANCO
 require("./database/db");
 
 const express = require("express");
 const cors = require("cors");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const path = require("path");
+const multer = require("multer");
 
 const app = express();
-
-const SEGREDO = process.env.JWT_SECRET;
 
 app.use(cors());
 app.use(express.json());
 
-// servir frontend
+// =====================
+// 📸 CONFIG UPLOAD
+// =====================
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../img"));
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  }
+});
+
+const upload = multer({ storage });
+
+// =====================
+// FRONTEND
+// =====================
 app.use(express.static(path.join(__dirname, "../")));
 
-// =========================
-// 🔥 ROTA PRINCIPAL
-// =========================
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../index.html"));
 });
 
-// =========================
-// 📦 MODELS
-// =========================
+// =====================
+// MODEL
+// =====================
 const Produto = require("./models/produtos");
-const Pedido = require("./models/pedido");
-const Usuario = require("./models/usuario");
 
-// =========================
-// 📦 LISTAR PRODUTOS
-// =========================
+// =====================
+// LISTAR
+// =====================
 app.get("/produtos", async (req, res) => {
+  const produtos = await Produto.find();
+  res.json(produtos);
+});
+
+// =====================
+// CRIAR COM IMAGEM
+// =====================
+app.post("/produtos", upload.single("imagem"), async (req, res) => {
   try {
-    const produtos = await Produto.find();
-    res.json(produtos);
-  } catch (erro) {
-    res.status(500).send("Erro ao buscar produtos");
+    const novo = new Produto({
+      nome: req.body.nome,
+      preco: Number(req.body.preco),
+      estoque: Number(req.body.estoque),
+      imagem: req.file ? "/img/" + req.file.filename : ""
+    });
+
+    await novo.save();
+    res.json(novo);
+  } catch (e) {
+    res.status(500).send("Erro ao criar");
   }
 });
 
-// =========================
-// ✏️ ATUALIZAR PRODUTO
-// =========================
+// =====================
+// ATUALIZAR
+// =====================
 app.put("/produtos/:id", async (req, res) => {
-  try {
-    const { nome, preco, imagem } = req.body;
+  const atualizado = await Produto.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true }
+  );
 
-    const produtoAtualizado = await Produto.findByIdAndUpdate(
-      req.params.id,
-      { nome, preco, imagem },
-      { new: true }
-    );
-
-    res.json(produtoAtualizado);
-  } catch (erro) {
-    res.status(500).send("Erro ao atualizar produto");
-  }
+  res.json(atualizado);
 });
 
-// =========================
-// 👤 LOGIN
-// =========================
-app.post("/login", async (req, res) => {
-  try {
-    const { email, senha } = req.body;
-
-    const usuario = await Usuario.findOne({ email });
-
-    if (!usuario) return res.status(400).send("Usuário não encontrado");
-
-    const senhaValida = await bcrypt.compare(senha, usuario.senha);
-
-    if (!senhaValida) return res.status(400).send("Senha incorreta");
-
-    const token = jwt.sign(
-      { id: usuario._id, tipo: usuario.tipo },
-      SEGREDO,
-      { expiresIn: "7d" }
-    );
-
-    res.json({ token, tipo: usuario.tipo });
-
-  } catch {
-    res.status(500).send("Erro no login");
-  }
+// =====================
+// DELETE
+// =====================
+app.delete("/produtos/:id", async (req, res) => {
+  await Produto.findByIdAndDelete(req.params.id);
+  res.send("ok");
 });
 
-// =========================
-// 🚀 PORTA
-// =========================
+// =====================
+// PORTA
+// =====================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Servidor rodando 🚀 na porta " + PORT);
+  console.log("🚀 rodando");
 });

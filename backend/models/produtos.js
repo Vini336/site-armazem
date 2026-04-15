@@ -1,25 +1,10 @@
 const mongoose = require("mongoose");
 
 const ProdutoSchema = new mongoose.Schema({
-  code: Number, // novo (codigo da planilha)
-
   nome: String,
-
-  preco: {
-    type: Number,
-    default: 0
-  },
-
+  preco: Number,
   imagem: String,
-
-  promocao: {
-    type: Boolean,
-    default: false
-  },
-
-  stock: Number, // novo (quantidade)
-
-  minStock: Number // novo (estoque minimo)
+  estoque: Number
 });
 
 module.exports = mongoose.model("Produto", ProdutoSchema);
