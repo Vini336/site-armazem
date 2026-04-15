@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function carregarProdutos() {
         try {
-            const resposta = await fetch("http://localhost:3000/produtos");
+            const resposta = await fetch("https://site-armazem.onrender.com/produtos");
             const produtos = await resposta.json();
 
             console.log("Produtos recebidos:", produtos);

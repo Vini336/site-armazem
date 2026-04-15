@@ -1,4 +1,4 @@
-const API = "http://localhost:3000"; // ou seu backend online
+const API = "https://site-armazem.onrender.com"; // ou seu backend online
 
 function abrirLogin() {
   document.getElementById("loginModal").classList.add("ativo");
