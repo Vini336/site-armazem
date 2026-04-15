@@ -56,6 +56,10 @@ function verificarAdmin(req, res, next) {
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("API do Armazém Hora Certa rodando 🚀");
+});
+
 // =========================
 // 📦 MODELS
 // =========================
