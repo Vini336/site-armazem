@@ -6,14 +6,38 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
+const jwt = require("jsonwebtoken");
 
 const app = express();
+
+const SEGREDO = process.env.JWT_SECRET;
 
 app.use(cors());
 app.use(express.json());
 
 // =====================
-// 📸 CONFIG UPLOAD
+// 🔐 MIDDLEWARE ADMIN
+// =====================
+function verificarAdmin(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) return res.status(401).send("Sem acesso");
+
+  try {
+    const decoded = jwt.verify(token, SEGREDO);
+
+    if (decoded.tipo !== "admin") {
+      return res.status(403).send("Não é admin");
+    }
+
+    next();
+  } catch {
+    return res.status(401).send("Token inválido");
+  }
+}
+
+// =====================
+// 📸 UPLOAD
 // =====================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -49,9 +73,9 @@ app.get("/produtos", async (req, res) => {
 });
 
 // =====================
-// CRIAR COM IMAGEM
+// CRIAR (PROTEGIDO)
 // =====================
-app.post("/produtos", upload.single("imagem"), async (req, res) => {
+app.post("/produtos", verificarAdmin, upload.single("imagem"), async (req, res) => {
   try {
     const novo = new Produto({
       nome: req.body.nome,
@@ -62,15 +86,15 @@ app.post("/produtos", upload.single("imagem"), async (req, res) => {
 
     await novo.save();
     res.json(novo);
-  } catch (e) {
+  } catch {
     res.status(500).send("Erro ao criar");
   }
 });
 
 // =====================
-// ATUALIZAR
+// ATUALIZAR (PROTEGIDO)
 // =====================
-app.put("/produtos/:id", async (req, res) => {
+app.put("/produtos/:id", verificarAdmin, async (req, res) => {
   const atualizado = await Produto.findByIdAndUpdate(
     req.params.id,
     req.body,
@@ -81,9 +105,9 @@ app.put("/produtos/:id", async (req, res) => {
 });
 
 // =====================
-// DELETE
+// DELETE (PROTEGIDO)
 // =====================
-app.delete("/produtos/:id", async (req, res) => {
+app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
   await Produto.findByIdAndDelete(req.params.id);
   res.send("ok");
 });
@@ -94,5 +118,5 @@ app.delete("/produtos/:id", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("🚀 rodando");
+  console.log("🚀 rodando com segurança");
 });

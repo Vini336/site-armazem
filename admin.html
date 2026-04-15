@@ -47,7 +47,7 @@ img {
 
 <div class="container">
 
-<h1>🛠 Admin Produtos</h1>
+<h1>🛠 Admin Produtos (Seguro)</h1>
 
 <div class="card">
   <h3>Novo Produto</h3>
@@ -65,6 +65,15 @@ img {
 
 <script>
 const API = "https://site-armazem.onrender.com";
+
+// 🔐 TOKEN
+const token = localStorage.getItem("token");
+const tipo = localStorage.getItem("tipo");
+
+if (!token || tipo !== "admin") {
+  alert("Acesso negado 🚫");
+  window.location.href = "index.html";
+}
 
 // LISTAR
 async function carregar() {
@@ -92,7 +101,7 @@ async function carregar() {
   document.getElementById("lista").innerHTML = html;
 }
 
-// CRIAR COM IMAGEM
+// CRIAR
 async function criar() {
   const form = new FormData();
 
@@ -103,6 +112,9 @@ async function criar() {
 
   await fetch(API + "/produtos", {
     method: "POST",
+    headers: {
+      Authorization: token
+    },
     body: form
   });
 
@@ -116,7 +128,10 @@ async function editar(id) {
 
   await fetch(API + "/produtos/" + id, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token
+    },
     body: JSON.stringify({
       preco: Number(preco),
       estoque: Number(estoque)
@@ -131,7 +146,10 @@ async function deletar(id) {
   if (!confirm("Deletar?")) return;
 
   await fetch(API + "/produtos/" + id, {
-    method: "DELETE"
+    method: "DELETE",
+    headers: {
+      Authorization: token
+    }
   });
 
   carregar();
