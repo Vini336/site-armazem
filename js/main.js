@@ -19,14 +19,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Produto individual:", produto);
 
                 const nome = produto.nome || "Sem nome";
-                const preco = produto.preco || 0;
-                const imagem = produto.imagem || "img/sem-imagem.png";
+
+                // 🔥 garante preço correto
+                const preco = Number(produto.preco) || 0;
+
+                // 🔥 corrige imagem (evita 404)
+                const imagem = (produto.imagem && produto.imagem.startsWith("http"))
+                    ? produto.imagem
+                    : "https://i.imgur.com/1X6ZQZg.png";
 
                 const card = document.createElement("div");
                 card.classList.add("produto-card");
 
                 card.innerHTML = `
-                    <img src="${imagem}" onerror="this.src='img/sem-imagem.png'">
+                    <img src="${imagem}" 
+                         onerror="this.src='https://i.imgur.com/1X6ZQZg.png'">
                     <h3>${nome}</h3>
                     <p class="preco">R$ ${preco.toFixed(2)}</p>
                     <button class="btn-add">🛒 Adicionar</button>
