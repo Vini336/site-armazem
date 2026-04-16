@@ -124,7 +124,7 @@ app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
 });
 
 // 🔥 ATIVAR CAMPO EM TODOS OS PRODUTOS
-app.get("/corrigir-produtos", async (req, res) => {
+app.get("/corrigir-produtos", verificarAdmin, async (req, res) => {
   try {
     const resultado = await Produto.updateMany(
       {},
