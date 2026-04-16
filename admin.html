@@ -64,9 +64,10 @@ img {
 </div>
 
 <script>
-const API = "https://site-armazem.onrender.com";
+const API = window.location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://site-armazem.onrender.com";
 
-// 🔐 TOKEN
 const token = localStorage.getItem("token");
 const tipo = localStorage.getItem("tipo");
 
@@ -75,89 +76,36 @@ if (!token || tipo !== "admin") {
   window.location.href = "index.html";
 }
 
-// LISTAR
 async function carregar() {
-  const res = await fetch(API + "/produtos");
+  const res = await fetch(API + "/produtos/admin", {
+    headers: { Authorization: token }
+  });
+
   const produtos = await res.json();
 
   let html = "";
 
- produtos.forEach(p => {
-  html += `
-    <div class="card">
-      <img src="${p.imagem}" />
-      <h3>${p.nome}</h3>
-      💰 R$ ${p.preco} <br>
-      📦 Estoque: ${p.estoque || 0} <br>
-      <p>Status: ${p.ativo ? "🟢 Ativo" : "🔴 Oculto"}</p>
+  produtos.forEach(p => {
+    html += `
+      <div class="card">
+        <img src="${p.imagem}" />
+        <h3>${p.nome}</h3>
+        💰 R$ ${p.preco} <br>
+        📦 Estoque: ${p.estoque || 0} <br>
+        <p>Status: ${p.ativo ? "🟢 Ativo" : "🔴 Oculto"}</p>
 
-      <br>
-
-      <button onclick="editar('${p._id}')">✏️</button>
-      <button onclick="deletar('${p._id}')">🗑</button>
-      <button onclick="toggleAtivo('${p._id}', ${p.ativo})">
-        ${p.ativo ? "Desativar" : "Ativar"}
-      </button>
-    </div>
-  `;
-});
+        <button onclick="editar('${p._id}')">✏️</button>
+        <button onclick="deletar('${p._id}')">🗑</button>
+        <button onclick="toggleAtivo('${p._id}', ${p.ativo})">
+          ${p.ativo ? "Desativar" : "Ativar"}
+        </button>
+      </div>
+    `;
+  });
 
   document.getElementById("lista").innerHTML = html;
 }
 
-// CRIAR
-async function criar() {
-  const form = new FormData();
-
-  form.append("nome", document.getElementById("nome").value);
-  form.append("preco", document.getElementById("preco").value);
-  form.append("estoque", document.getElementById("estoque").value);
-  form.append("imagem", document.getElementById("imagem").files[0]);
-
-  await fetch(API + "/produtos", {
-    method: "POST",
-    headers: {
-      Authorization: token
-    },
-    body: form
-  });
-
-  carregar();
-}
-
-// EDITAR
-async function editar(id) {
-  const preco = prompt("Novo preço:");
-  const estoque = prompt("Novo estoque:");
-
-  await fetch(API + "/produtos/" + id, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: token
-    },
-    body: JSON.stringify({
-      preco: Number(preco),
-      estoque: Number(estoque)
-    })
-  });
-
-  carregar();
-}
-
-// DELETE
-async function deletar(id) {
-  if (!confirm("Deletar?")) return;
-
-  await fetch(API + "/produtos/" + id, {
-    method: "DELETE",
-    headers: {
-      Authorization: token
-    }
-  });
-
-  carregar();
-}
 async function toggleAtivo(id, atual) {
   await fetch(API + "/produtos/" + id, {
     method: "PUT",

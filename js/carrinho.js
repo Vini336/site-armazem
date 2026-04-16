@@ -1,3 +1,7 @@
+const API = window.location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://site-armazem.onrender.com";
+
 let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
 function adicionarCarrinho(id, nome, preco) {
@@ -52,7 +56,7 @@ async function finalizarCompra() {
 
   const total = carrinho.reduce((t, i) => t + i.preco * i.qtd, 0);
 
-  const resposta = await fetch("https://site-armazem.onrender.com/pedido", {
+  const resposta = await fetch(`${API}/pedido`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

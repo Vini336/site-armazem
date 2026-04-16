@@ -1,4 +1,6 @@
-const API = "https://site-armazem.onrender.com"; // ou seu backend online
+const API = window.location.hostname === "localhost"
+  ? "http://localhost:3000"
+  : "https://site-armazem.onrender.com";
 
 function abrirLogin() {
   document.getElementById("loginModal").classList.add("ativo");
@@ -69,7 +71,7 @@ async function fazerLogin() {
       window.location.href = "admin.html";
     }
 
-  } catch (erro) {
+  } catch {
     alert("Erro ao fazer login");
   }
 }
