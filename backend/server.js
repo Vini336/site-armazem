@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 require("./database/db");
 
 const express = require("express");
@@ -9,7 +8,6 @@ const multer = require("multer");
 const jwt = require("jsonwebtoken");
 
 const app = express();
-
 const SEGREDO = process.env.JWT_SECRET;
 
 app.use(cors());
@@ -60,12 +58,13 @@ app.get("/", (req, res) => {
 });
 
 // =====================
-// MODEL
+// MODELS
 // =====================
 const Produto = require("./models/produtos");
+const Pedido = require("./models/pedido");
 
 // =====================
-// LISTAR
+// 📦 LISTAR PRODUTOS
 // =====================
 app.get("/produtos", async (req, res) => {
   const pagina = Number(req.query.page) || 1;
@@ -84,7 +83,7 @@ app.get("/produtos", async (req, res) => {
 });
 
 // =====================
-// CRIAR (PROTEGIDO)
+// ➕ CRIAR PRODUTO
 // =====================
 app.post("/produtos", verificarAdmin, upload.single("imagem"), async (req, res) => {
   try {
@@ -103,7 +102,7 @@ app.post("/produtos", verificarAdmin, upload.single("imagem"), async (req, res) 
 });
 
 // =====================
-// ATUALIZAR (PROTEGIDO)
+// ✏️ ATUALIZAR PRODUTO
 // =====================
 app.put("/produtos/:id", verificarAdmin, async (req, res) => {
   const atualizado = await Produto.findByIdAndUpdate(
@@ -116,14 +115,16 @@ app.put("/produtos/:id", verificarAdmin, async (req, res) => {
 });
 
 // =====================
-// DELETE (PROTEGIDO)
+// 🗑 DELETE PRODUTO
 // =====================
 app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
   await Produto.findByIdAndDelete(req.params.id);
   res.send("ok");
 });
 
-// 🔥 ATIVAR CAMPO EM TODOS OS PRODUTOS
+// =====================
+// 🔥 CORRIGIR PRODUTOS
+// =====================
 app.get("/corrigir-produtos", verificarAdmin, async (req, res) => {
   try {
     const resultado = await Produto.updateMany(
@@ -138,7 +139,47 @@ app.get("/corrigir-produtos", verificarAdmin, async (req, res) => {
 });
 
 // =====================
-// PORTA
+// 📦 PEDIDOS (COM ESTOQUE)
+// =====================
+app.post("/pedido", async (req, res) => {
+  try {
+    const { itens, total, nome, telefone, endereco } = req.body;
+
+    // 🔒 VERIFICAR ESTOQUE
+    for (let item of itens) {
+      const produto = await Produto.findById(item.id);
+
+      if (!produto || produto.estoque < item.qtd) {
+        return res.status(400).send(`Produto ${produto?.nome || ""} sem estoque suficiente`);
+      }
+    }
+
+    // 📉 DESCONTAR ESTOQUE
+    for (let item of itens) {
+      await Produto.findByIdAndUpdate(item.id, {
+        $inc: { estoque: -item.qtd }
+      });
+    }
+
+    // 💾 SALVAR PEDIDO
+    const novoPedido = new Pedido({
+      nome,
+      telefone,
+      endereco,
+      itens,
+      total
+    });
+
+    await novoPedido.save();
+
+    res.send("Pedido realizado com sucesso!");
+  } catch (erro) {
+    res.status(500).send("Erro ao finalizar pedido");
+  }
+});
+
+// =====================
+// 🚀 PORTA
 // =====================
 const PORT = process.env.PORT || 3000;
 
