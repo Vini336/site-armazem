@@ -24,12 +24,9 @@ function atualizarCarrinho() {
     return;
   }
 
-  let total = 0;
   let html = "";
 
   carrinho.forEach((item, index) => {
-    total += item.preco * item.qtd;
-
     html += `
       <div>
         <p>${item.nome}</p>

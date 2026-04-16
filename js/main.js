@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       produtos.forEach(produto => {
         const card = document.createElement("div");
-        card.classList.add("produto-card");
 
         card.innerHTML = `
           <img src="${produto.imagem}">
