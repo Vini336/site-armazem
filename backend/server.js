@@ -75,7 +75,7 @@ app.get("/produtos", async (req, res) => {
     .skip((pagina - 1) * limite)
     .limit(limite);
 
-  const total = await Produto.countDocuments();
+  const total = await Produto.countDocuments({ ativo: true });
 
   res.json({
     produtos,

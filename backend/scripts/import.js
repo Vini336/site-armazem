@@ -21,7 +21,7 @@ fs.createReadStream("../produtos.csv")
       nome: data.nome || data.NOME || "Produto sem nome",
       preco: Number(data.preco) || 0,
       imagem: data.imagem || "img/sem-imagem.png",
-      stock: Number(data.stock) || 0
+      estoque: Number(data.stock) || 0
     });
   })
   .on("end", async () => {
