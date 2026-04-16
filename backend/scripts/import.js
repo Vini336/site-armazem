@@ -14,7 +14,7 @@ const Produto = require("../models/produtos");
 const resultados = [];
 
 // leitura do CSV
-fs.createReadStream("../produtos.csv")
+fs.createReadStream("../data/produtos.csv")
   .pipe(csv())
   .on("data", (data) => {
     resultados.push({
