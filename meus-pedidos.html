@@ -13,61 +13,73 @@
 <div id="listaPedidos"></div>
 
 <script>
+// 🔥 API ONLINE
+const API = "https://site-armazem.onrender.com";
+
 const token = localStorage.getItem("token");
 
 if (!token) {
   alert("Faça login primeiro!");
-  window.location.href = "login.html";
+  window.location.href = "index.html";
 }
 
 // 🔥 CARREGAR PEDIDOS
 async function carregarMeusPedidos() {
-  const resposta = await fetch("http://localhost:3000/meus-pedidos", {
-    headers: {
-      Authorization: token
+  try {
+    const resposta = await fetch(`${API}/meus-pedidos`, {
+      headers: {
+        Authorization: token
+      }
+    });
+
+    if (!resposta.ok) {
+      throw new Error("Erro ao buscar pedidos");
     }
-  });
 
-  const pedidos = await resposta.json();
+    const pedidos = await resposta.json();
 
-  const div = document.getElementById("listaPedidos");
+    const div = document.getElementById("listaPedidos");
 
-  if (pedidos.length === 0) {
-    div.innerHTML = "<p>Você ainda não fez pedidos 😢</p>";
-    return;
+    if (pedidos.length === 0) {
+      div.innerHTML = "<p>Você ainda não fez pedidos 😢</p>";
+      return;
+    }
+
+    let html = "";
+
+    pedidos.forEach(pedido => {
+      html += `
+        <div class="card-pedido">
+          <p><strong>Data:</strong> ${new Date(pedido.data).toLocaleString()}</p>
+          <p><strong>Total:</strong> R$ ${pedido.total}</p>
+
+          <p>
+            <strong>Pagamento:</strong>
+            <span class="${pedido.statusPagamento === 'pago' ? 'status-entregue' : 'status-pendente'}">
+              ${pedido.statusPagamento === 'pago' ? 'Pago' : 'Pendente'}
+            </span>
+          </p>
+
+          <p>
+            <strong>Status:</strong>
+            <span class="${pedido.status === 'entregue' ? 'status-entregue' : 'status-pendente'}">
+              ${pedido.status === 'entregue' ? 'Entregue' : 'Em andamento'}
+            </span>
+          </p>
+
+          <p><strong>Itens:</strong></p>
+          <ul>
+            ${pedido.itens.map(item => `<li>${item.nome} (x${item.qtd})</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    });
+
+    div.innerHTML = html;
+
+  } catch (erro) {
+    document.getElementById("listaPedidos").innerHTML = "<p>Erro ao carregar pedidos</p>";
   }
-
-  let html = "";
-
-  pedidos.forEach(pedido => {
-    html += `
-      <div class="card-pedido">
-        <p><strong>Data:</strong> ${new Date(pedido.data).toLocaleString()}</p>
-        <p><strong>Total:</strong> R$ ${pedido.total}</p>
-
-        <p>
-          <strong>Pagamento:</strong>
-          <span class="${pedido.statusPagamento === 'pago' ? 'status-entregue' : 'status-pendente'}">
-            ${pedido.statusPagamento === 'pago' ? 'Pago' : 'Pendente'}
-          </span>
-        </p>
-
-        <p>
-          <strong>Status:</strong>
-          <span class="${pedido.status === 'entregue' ? 'status-entregue' : 'status-pendente'}">
-            ${pedido.status === 'entregue' ? 'Entregue' : 'Em andamento'}
-          </span>
-        </p>
-
-        <p><strong>Itens:</strong></p>
-        <ul>
-          ${pedido.itens.map(item => `<li>${item.nome} (x${item.qtd})</li>`).join("")}
-        </ul>
-      </div>
-    `;
-  });
-
-  div.innerHTML = html;
 }
 
 carregarMeusPedidos();
