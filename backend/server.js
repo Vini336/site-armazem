@@ -125,17 +125,43 @@ app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
 // =====================
 // 🔥 CORRIGIR PRODUTOS
 // =====================
-app.get("/corrigir-produtos", verificarAdmin, async (req, res) => {
+// =====================
+// 🔥 ATIVAR TODOS PRODUTOS (TEMP)
+// =====================
+app.get("/ativar-produtos", async (req, res) => {
   try {
     const resultado = await Produto.updateMany(
       {},
-      { $set: { ativo: false } }
+      { $set: { ativo: true } }
     );
 
-    res.send(`Atualizados: ${resultado.modifiedCount} produtos`);
+    res.send(`✅ ${resultado.modifiedCount} produtos ativados`);
   } catch (erro) {
-    res.status(500).send("Erro ao atualizar");
+    res.status(500).send("Erro ao ativar produtos");
   }
+});
+
+// =====================
+// 🔘 ATIVAR / DESATIVAR INDIVIDUAL
+// =====================
+app.put("/produtos/:id/ativar", verificarAdmin, async (req, res) => {
+  const produto = await Produto.findByIdAndUpdate(
+    req.params.id,
+    { ativo: true },
+    { new: true }
+  );
+
+  res.json(produto);
+});
+
+app.put("/produtos/:id/desativar", verificarAdmin, async (req, res) => {
+  const produto = await Produto.findByIdAndUpdate(
+    req.params.id,
+    { ativo: false },
+    { new: true }
+  );
+
+  res.json(produto);
 });
 
 // =====================
