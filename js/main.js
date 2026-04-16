@@ -1,77 +1,67 @@
+const API = "https://site-armazem.onrender.com";
+
 document.addEventListener("DOMContentLoaded", () => {
-    const container = document.getElementById("listaProdutos");
-    const paginacao = document.getElementById("paginacao");
+  const container = document.getElementById("listaProdutos");
+  const paginacao = document.getElementById("paginacao");
 
-    let paginaAtual = 1;
+  let paginaAtual = 1;
 
-    async function carregarProdutos() {
-        try {
-            const resposta = await fetch(
-                `https://site-armazem.onrender.com/produtos?page=${paginaAtual}`
-            );
+  async function carregarProdutos() {
+    try {
+      const resposta = await fetch(`${API}/produtos?page=${paginaAtual}`);
+      const data = await resposta.json();
+      const produtos = data.produtos;
 
-            const data = await resposta.json();
-            const produtos = data.produtos;
+      container.innerHTML = "";
 
-            console.log("Produtos recebidos:", produtos);
+      produtos.forEach(produto => {
+        const card = document.createElement("div");
+        card.classList.add("produto-card");
 
-            container.innerHTML = "";
+        card.innerHTML = `
+          <img src="${produto.imagem}">
+          <h3>${produto.nome}</h3>
+          <p>R$ ${produto.preco.toFixed(2)}</p>
 
-            if (!produtos.length) {
-                container.innerHTML = "<p>Nenhum produto encontrado</p>";
-                return;
-            }
+          ${
+            produto.estoque <= 0
+              ? "<p style='color:red'>Esgotado</p>"
+              : ""
+          }
 
-            produtos.forEach(produto => {
-                const nome = produto.nome || "Sem nome";
-                const preco = Number(produto.preco) || 0;
+          <button 
+            ${produto.estoque <= 0 ? "disabled" : ""}
+            onclick="adicionarCarrinho('${produto._id}', '${produto.nome}', ${produto.preco})"
+          >
+            ${produto.estoque <= 0 ? "Esgotado" : "🛒 Adicionar"}
+          </button>
+        `;
 
-                const imagem = (produto.imagem && produto.imagem.startsWith("http"))
-                    ? produto.imagem
-                    : "https://i.imgur.com/1X6ZQZg.png";
+        container.appendChild(card);
+      });
 
-                const card = document.createElement("div");
-                card.classList.add("produto-card");
+      criarPaginacao(data.totalPaginas);
 
-                card.innerHTML = `
-                    <img src="${imagem}" 
-                         onerror="this.src='https://i.imgur.com/1X6ZQZg.png'">
-                    <h3>${nome}</h3>
-                    <p class="preco">R$ ${preco.toFixed(2)}</p>
-                    <button class="btn-add">🛒 Adicionar</button>
-                    <button class="btn-whatsapp">💬 WhatsApp</button>
-                `;
-
-                container.appendChild(card);
-            });
-
-            criarPaginacao(data.totalPaginas);
-
-        } catch (erro) {
-            console.error("Erro ao carregar produtos:", erro);
-            container.innerHTML = "<p>Erro ao carregar produtos</p>";
-        }
+    } catch {
+      container.innerHTML = "<p>Erro ao carregar produtos</p>";
     }
+  }
 
-    function criarPaginacao(totalPaginas) {
-        paginacao.innerHTML = "";
+  function criarPaginacao(totalPaginas) {
+    paginacao.innerHTML = "";
 
-        for (let i = 1; i <= totalPaginas; i++) {
-            const btn = document.createElement("button");
-            btn.innerText = i;
+    for (let i = 1; i <= totalPaginas; i++) {
+      const btn = document.createElement("button");
+      btn.innerText = i;
 
-            if (i === paginaAtual) {
-                btn.style.background = "#ffd700";
-            }
+      btn.onclick = () => {
+        paginaAtual = i;
+        carregarProdutos();
+      };
 
-            btn.onclick = () => {
-                paginaAtual = i;
-                carregarProdutos();
-            };
-
-            paginacao.appendChild(btn);
-        }
+      paginacao.appendChild(btn);
     }
+  }
 
-    carregarProdutos();
+  carregarProdutos();
 });

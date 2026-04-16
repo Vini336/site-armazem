@@ -28,7 +28,11 @@
 </div>
 
 <script src="js/main.js"></script>
+
 <script>
+// 🔥 SUA API ONLINE
+const API = "https://site-armazem.onrender.com";
+
 async function fazerCadastro() {
   const nome = document.getElementById("nomeCadastro").value;
   const email = document.getElementById("emailCadastro").value;
@@ -41,7 +45,7 @@ async function fazerCadastro() {
   }
 
   try {
-    const resposta = await fetch("http://localhost:3000/cadastro", {
+    const resposta = await fetch(`${API}/cadastro`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -54,20 +58,18 @@ async function fazerCadastro() {
       })
     });
 
-// mensagem mais profissional
-const texto = await resposta.text();
+    const texto = await resposta.text();
 
-if (!resposta.ok) {
-  alert(texto); // mostra erro (ex: email já cadastrado)
-  return;
-}
+    if (!resposta.ok) {
+      alert(texto);
+      return;
+    }
 
-alert("Cadastro realizado com sucesso! 🎉");
+    alert("Cadastro realizado com sucesso! 🎉");
 
-// espera 1.5s e redireciona
-setTimeout(() => {
-  window.location.href = "index.html";
-}, 1500);
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 1500);
 
   } catch (erro) {
     alert("Erro ao cadastrar");
