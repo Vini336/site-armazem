@@ -82,21 +82,25 @@ async function carregar() {
 
   let html = "";
 
-  produtos.forEach(p => {
-    html += `
-      <div class="card">
-        <img src="${p.imagem}" />
-        <h3>${p.nome}</h3>
-        💰 R$ ${p.preco} <br>
-        📦 Estoque: ${p.estoque || 0}
+ produtos.forEach(p => {
+  html += `
+    <div class="card">
+      <img src="${p.imagem}" />
+      <h3>${p.nome}</h3>
+      💰 R$ ${p.preco} <br>
+      📦 Estoque: ${p.estoque || 0} <br>
+      <p>Status: ${p.ativo ? "🟢 Ativo" : "🔴 Oculto"}</p>
 
-        <br>
+      <br>
 
-        <button onclick="editar('${p._id}')">✏️</button>
-        <button onclick="deletar('${p._id}')">🗑</button>
-      </div>
-    `;
-  });
+      <button onclick="editar('${p._id}')">✏️</button>
+      <button onclick="deletar('${p._id}')">🗑</button>
+      <button onclick="toggleAtivo('${p._id}', ${p.ativo})">
+        ${p.ativo ? "Desativar" : "Ativar"}
+      </button>
+    </div>
+  `;
+});
 
   document.getElementById("lista").innerHTML = html;
 }
@@ -150,6 +154,20 @@ async function deletar(id) {
     headers: {
       Authorization: token
     }
+  });
+
+  carregar();
+}
+async function toggleAtivo(id, atual) {
+  await fetch(API + "/produtos/" + id, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token
+    },
+    body: JSON.stringify({
+      ativo: !atual
+    })
   });
 
   carregar();

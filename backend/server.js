@@ -71,7 +71,7 @@ app.get("/produtos", async (req, res) => {
   const pagina = Number(req.query.page) || 1;
   const limite = 6;
 
-  const produtos = await Produto.find()
+  const produtos = await Produto.find({ ativo: true })
     .skip((pagina - 1) * limite)
     .limit(limite);
 
@@ -121,6 +121,20 @@ app.put("/produtos/:id", verificarAdmin, async (req, res) => {
 app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
   await Produto.findByIdAndDelete(req.params.id);
   res.send("ok");
+});
+
+// 🔥 ATIVAR CAMPO EM TODOS OS PRODUTOS
+app.get("/corrigir-produtos", async (req, res) => {
+  try {
+    const resultado = await Produto.updateMany(
+      {},
+      { $set: { ativo: false } }
+    );
+
+    res.send(`Atualizados: ${resultado.modifiedCount} produtos`);
+  } catch (erro) {
+    res.status(500).send("Erro ao atualizar");
+  }
 });
 
 // =====================
