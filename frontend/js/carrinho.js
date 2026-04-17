@@ -1,7 +1,3 @@
-const API = window.location.hostname === "localhost"
-  ? "http://localhost:3000"
-  : "https://site-armazem.onrender.com";
-
 let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
 function adicionarCarrinho(id, nome, preco) {

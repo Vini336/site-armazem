@@ -1,8 +1,4 @@
-const API = window.location.hostname === "localhost"
-  ? "http://localhost:3000"
-  : "https://site-armazem.onrender.com";
-
-document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("listaProdutos");
   const paginacao = document.getElementById("paginacao");
 
