@@ -49,7 +49,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // =====================
-// 🌐 FRONTEND (CORRETO AGORA)
+// 🌐 FRONTEND
 // =====================
 app.use(express.static(path.join(__dirname, "../frontend")));
 
