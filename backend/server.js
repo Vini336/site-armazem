@@ -39,7 +39,7 @@ function verificarAdmin(req, res, next) {
 // =====================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../img"));
+    cb(null, path.join(__dirname, "../frontend/img"));
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
@@ -49,7 +49,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // =====================
-// 🌐 FRONTEND (CORRIGIDO)
+// 🌐 FRONTEND (CORRETO AGORA)
 // =====================
 app.use(express.static(path.join(__dirname, "../frontend")));
 
@@ -115,6 +115,14 @@ app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
 });
 
 // =====================
+// 🔥 ATIVAR PRODUTOS
+// =====================
+app.get("/ativar-produtos", async (req, res) => {
+  const resultado = await Produto.updateMany({}, { ativo: true });
+  res.send(`✅ ${resultado.modifiedCount} produtos ativados`);
+});
+
+// =====================
 // 📦 PEDIDOS
 // =====================
 app.post("/pedido", async (req, res) => {
@@ -156,5 +164,5 @@ app.post("/pedido", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🚀 http://localhost:${PORT}`);
 });
