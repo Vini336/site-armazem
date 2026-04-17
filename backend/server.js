@@ -49,7 +49,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // =====================
-// 🌐 FRONTEND
+// 🌐 FRONTEND (CORRETO)
 // =====================
 app.use(express.static(path.join(__dirname, "../frontend")));
 
@@ -62,6 +62,41 @@ app.get("/", (req, res) => {
 // =====================
 const Produto = require("./models/produtos");
 const Pedido = require("./models/pedido");
+const Usuario = require("./models/usuario");
+
+// =====================
+// 🔐 LOGIN
+// =====================
+app.post("/login", async (req, res) => {
+  const { email, senha } = req.body;
+
+  const user = await Usuario.findOne({ email });
+
+  if (!user || user.senha !== senha) {
+    return res.status(400).send("Email ou senha inválidos");
+  }
+
+  const token = jwt.sign(
+    { id: user._id, tipo: user.tipo },
+    SEGREDO,
+    { expiresIn: "7d" }
+  );
+
+  res.json({ token, tipo: user.tipo });
+});
+
+// =====================
+// 👤 CADASTRO
+// =====================
+app.post("/cadastro", async (req, res) => {
+  try {
+    const novo = new Usuario(req.body);
+    await novo.save();
+    res.send("Usuário criado!");
+  } catch {
+    res.status(400).send("Erro ao cadastrar");
+  }
+});
 
 // =====================
 // 📦 PRODUTOS
@@ -156,6 +191,14 @@ app.post("/pedido", async (req, res) => {
   } catch {
     res.status(500).send("Erro ao finalizar pedido");
   }
+});
+
+// =====================
+// 📦 MEUS PEDIDOS
+// =====================
+app.get("/meus-pedidos", async (req, res) => {
+  const pedidos = await Pedido.find().sort({ data: -1 });
+  res.json(pedidos);
 });
 
 // =====================
