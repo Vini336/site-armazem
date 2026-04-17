@@ -1,14 +1,16 @@
 const mongoose = require("mongoose");
 
 const produtoSchema = new mongoose.Schema({
+  codigo: Number,
   nome: String,
   preco: Number,
   imagem: String,
   estoque: Number,
+  qmin: Number,
 
   ativo: {
     type: Boolean,
-    default: false // 🔥 começa oculto por padrão
+    default: true // agora já aparece no site
   }
 });
 
