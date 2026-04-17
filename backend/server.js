@@ -49,12 +49,12 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // =====================
-// FRONTEND
+// 🌐 FRONTEND (CORRIGIDO)
 // =====================
-app.use(express.static(path.join(__dirname, "../")));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../index.html"));
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
 // =====================
@@ -64,7 +64,7 @@ const Produto = require("./models/produtos");
 const Pedido = require("./models/pedido");
 
 // =====================
-// 📦 LISTAR PRODUTOS (CLIENTE)
+// 📦 PRODUTOS
 // =====================
 app.get("/produtos", async (req, res) => {
   const pagina = Number(req.query.page) || 1;
@@ -82,40 +82,23 @@ app.get("/produtos", async (req, res) => {
   });
 });
 
-// =====================
-// 🔐 LISTAR PRODUTOS (ADMIN)
-// =====================
 app.get("/produtos/admin", verificarAdmin, async (req, res) => {
-  try {
-    const produtos = await Produto.find();
-    res.json(produtos);
-  } catch {
-    res.status(500).send("Erro ao buscar produtos");
-  }
+  const produtos = await Produto.find();
+  res.json(produtos);
 });
 
-// =====================
-// ➕ CRIAR PRODUTO
-// =====================
 app.post("/produtos", verificarAdmin, upload.single("imagem"), async (req, res) => {
-  try {
-    const novo = new Produto({
-      nome: req.body.nome,
-      preco: Number(req.body.preco),
-      estoque: Number(req.body.estoque),
-      imagem: req.file ? "/img/" + req.file.filename : ""
-    });
+  const novo = new Produto({
+    nome: req.body.nome,
+    preco: Number(req.body.preco),
+    estoque: Number(req.body.estoque),
+    imagem: req.file ? "/img/" + req.file.filename : ""
+  });
 
-    await novo.save();
-    res.json(novo);
-  } catch {
-    res.status(500).send("Erro ao criar");
-  }
+  await novo.save();
+  res.json(novo);
 });
 
-// =====================
-// ✏️ ATUALIZAR PRODUTO
-// =====================
 app.put("/produtos/:id", verificarAdmin, async (req, res) => {
   const atualizado = await Produto.findByIdAndUpdate(
     req.params.id,
@@ -126,28 +109,9 @@ app.put("/produtos/:id", verificarAdmin, async (req, res) => {
   res.json(atualizado);
 });
 
-// =====================
-// 🗑 DELETE PRODUTO
-// =====================
 app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
   await Produto.findByIdAndDelete(req.params.id);
   res.send("ok");
-});
-
-// =====================
-// 🔥 ATIVAR TODOS PRODUTOS (TEMP)
-// =====================
-app.get("/ativar-produtos", async (req, res) => {
-  try {
-    const resultado = await Produto.updateMany(
-      {},
-      { $set: { ativo: true } }
-    );
-
-    res.send(`✅ ${resultado.modifiedCount} produtos ativados`);
-  } catch {
-    res.status(500).send("Erro ao ativar produtos");
-  }
 });
 
 // =====================
@@ -159,7 +123,6 @@ app.post("/pedido", async (req, res) => {
 
     for (let item of itens) {
       const produto = await Produto.findById(item.id);
-
       if (!produto || produto.estoque < item.qtd) {
         return res.status(400).send("Produto sem estoque");
       }
@@ -193,5 +156,5 @@ app.post("/pedido", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("🚀 rodando com segurança");
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
