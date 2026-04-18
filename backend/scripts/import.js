@@ -21,7 +21,7 @@ console.log("CAMINHO CSV:", caminhoCSV);
 
 // 🔥 leitura do CSV (vírgula agora)
 fs.createReadStream(caminhoCSV)
-  .pipe(csv()) // ✅ agora é vírgula
+  .pipe(csv({ separator: ";" })) // ✅ agora é vírgula
   .on("data", (data) => {
 
     console.log("LINHA CSV:", data);
