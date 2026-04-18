@@ -5,7 +5,7 @@ const fs = require("fs");
 const csv = require("csv-parser");
 const mongoose = require("mongoose");
 
-// conexão
+// 🔥 conexão com banco
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("🔥 Banco conectado"))
   .catch(err => console.log(err));
@@ -14,24 +14,25 @@ const Produto = require("../models/produtos");
 
 const resultados = [];
 
-// caminho ABSOLUTO seguro
+// 🔥 caminho correto do CSV
 const caminhoCSV = path.resolve(__dirname, "../../data/produtos.csv");
 
-console.log("CAMINHO CSV:", caminhoCSV); // debug
+console.log("CAMINHO CSV:", caminhoCSV);
 
+// 🔥 leitura do CSV com ; (excel brasileiro)
 fs.createReadStream(caminhoCSV)
-  .pipe(csv())
+  .pipe(csv({ separator: ';' }))
   .on("data", (data) => {
 
     console.log("LINHA CSV:", data);
 
     resultados.push({
-      nome: data.Nome || data.nome || "Produto sem nome",
-      preco: Number(data.Preco || data.preco || 0),
-      imagem: data.Imagem || data.imagem || "img/sem-imagem.png",
-      estoque: Number(data.Stock || data.estoque || 0),
-      codigo: Number(data.Codigo || 0),
-      qmin: Number(data.Qmin || 0),
+      nome: data.nome || data.NOME || "Produto sem nome",
+      preco: Number((data.preco || data.PRECO || 0).toString().replace(",", ".")),
+      imagem: data.imagem || data.IMAGEM || "img/sem-imagem.png",
+      estoque: Number((data.stock || data.STOCK || 0).toString().replace(",", ".")),
+      codigo: Number(data.codigo || data.CODIGO || 0),
+      qmin: Number((data.qmin || data.QMIN || 0).toString().replace(",", ".")),
       ativo: true
     });
   })
