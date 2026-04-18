@@ -19,20 +19,41 @@ const caminhoCSV = path.resolve(__dirname, "../../data/produtos.csv");
 
 console.log("CAMINHO CSV:", caminhoCSV);
 
-// 🔥 leitura do CSV com ; (excel brasileiro)
+// 🔥 leitura do CSV (vírgula agora)
 fs.createReadStream(caminhoCSV)
-  .pipe(csv({ separator: ';' }))
+  .pipe(csv()) // ✅ agora é vírgula
   .on("data", (data) => {
 
     console.log("LINHA CSV:", data);
 
     resultados.push({
       nome: data.nome || data.NOME || "Produto sem nome",
-      preco: Number((data.preco || data.PRECO || 0).toString().replace(",", ".")),
+
+      preco: parseFloat(
+        (data.preco || data.PRECO || "0")
+          .toString()
+          .replace(",", ".")
+      ) || 0,
+
       imagem: data.imagem || data.IMAGEM || "img/sem-imagem.png",
-      estoque: Number((data.stock || data.STOCK || 0).toString().replace(",", ".")),
+
+      // 🔥 CORREÇÃO DO ESTOQUE (resolve NaN)
+      estoque: parseFloat(
+        (data.stock || data.STOCK || "0")
+          .toString()
+          .replace(",", ".")
+          .replace("(", "-")
+          .replace(")", "")
+      ) || 0,
+
       codigo: Number(data.codigo || data.CODIGO || 0),
-      qmin: Number((data.qmin || data.QMIN || 0).toString().replace(",", ".")),
+
+      qmin: parseFloat(
+        (data.qmin || data.QMIN || "0")
+          .toString()
+          .replace(",", ".")
+      ) || 0,
+
       ativo: true
     });
   })
