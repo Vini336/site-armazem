@@ -1,11 +1,12 @@
-require('dotenv').config();
-require("./database/db");
+require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
+
+const db = require("./database/mysql");
 
 const app = express();
 const SEGREDO = process.env.JWT_SECRET;
@@ -49,7 +50,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // =====================
-// 🌐 FRONTEND (CORRETO)
+// 🌐 FRONTEND
 // =====================
 app.use(express.static(path.join(__dirname, "../frontend")));
 
@@ -58,153 +59,147 @@ app.get("/", (req, res) => {
 });
 
 // =====================
-// MODELS
-// =====================
-const Produto = require("./models/produtos");
-const Pedido = require("./models/pedido");
-const Usuario = require("./models/usuario");
-
-// =====================
 // 🔐 LOGIN
 // =====================
-app.post("/login", async (req, res) => {
+app.post("/login", (req, res) => {
   const { email, senha } = req.body;
 
-  const user = await Usuario.findOne({ email });
+  db.query(
+    "SELECT * FROM clientes WHERE email = ?",
+    [email],
+    (err, results) => {
+      if (err) return res.status(500).send(err);
 
-  if (!user || user.senha !== senha) {
-    return res.status(400).send("Email ou senha inválidos");
-  }
+      const user = results[0];
 
-  const token = jwt.sign(
-    { id: user._id, tipo: user.tipo },
-    SEGREDO,
-    { expiresIn: "7d" }
+      if (!user || user.senha !== senha) {
+        return res.status(400).send("Email ou senha inválidos");
+      }
+
+      const token = jwt.sign(
+        { id: user.id, tipo: user.tipo || "cliente" },
+        SEGREDO,
+        { expiresIn: "7d" }
+      );
+
+      res.json({ token, tipo: user.tipo || "cliente" });
+    }
   );
-
-  res.json({ token, tipo: user.tipo });
 });
 
 // =====================
 // 👤 CADASTRO
 // =====================
-app.post("/cadastro", async (req, res) => {
-  try {
-    const novo = new Usuario(req.body);
-    await novo.save();
-    res.send("Usuário criado!");
-  } catch {
-    res.status(400).send("Erro ao cadastrar");
-  }
+app.post("/cadastro", (req, res) => {
+  const { nome, email, senha, telefone } = req.body;
+
+  db.query(
+    "INSERT INTO clientes (nome, email, senha, telefone) VALUES (?, ?, ?, ?)",
+    [nome, email, senha, telefone],
+    (err) => {
+      if (err) return res.status(400).send("Erro ao cadastrar");
+
+      res.send("Usuário criado!");
+    }
+  );
 });
 
 // =====================
 // 📦 PRODUTOS
 // =====================
-app.get("/produtos", async (req, res) => {
-  const pagina = Number(req.query.page) || 1;
+app.get("/produtos", (req, res) => {
+  const page = Number(req.query.page) || 1;
   const limite = 6;
+  const offset = (page - 1) * limite;
 
-  const produtos = await Produto.find({ ativo: true })
-    .skip((pagina - 1) * limite)
-    .limit(limite);
+  db.query(
+    "SELECT * FROM produtos WHERE ativo = 1 LIMIT ? OFFSET ?",
+    [limite, offset],
+    (err, produtos) => {
+      if (err) return res.status(500).send(err);
 
-  const total = await Produto.countDocuments({ ativo: true });
-
-  res.json({
-    produtos,
-    totalPaginas: Math.ceil(total / limite)
-  });
-});
-
-app.get("/produtos/admin", verificarAdmin, async (req, res) => {
-  const produtos = await Produto.find();
-  res.json(produtos);
-});
-
-app.post("/produtos", verificarAdmin, upload.single("imagem"), async (req, res) => {
-  const novo = new Produto({
-    nome: req.body.nome,
-    preco: Number(req.body.preco),
-    estoque: Number(req.body.estoque),
-    imagem: req.file ? "/img/" + req.file.filename : ""
-  });
-
-  await novo.save();
-  res.json(novo);
-});
-
-app.put("/produtos/:id", verificarAdmin, async (req, res) => {
-  const atualizado = await Produto.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
+      db.query(
+        "SELECT COUNT(*) as total FROM produtos WHERE ativo = 1",
+        (err2, count) => {
+          res.json({
+            produtos,
+            totalPaginas: Math.ceil(count[0].total / limite)
+          });
+        }
+      );
+    }
   );
-
-  res.json(atualizado);
 });
 
-app.delete("/produtos/:id", verificarAdmin, async (req, res) => {
-  await Produto.findByIdAndDelete(req.params.id);
-  res.send("ok");
+// ADMIN LISTAR
+app.get("/produtos/admin", verificarAdmin, (req, res) => {
+  db.query("SELECT * FROM produtos", (err, results) => {
+    res.json(results);
+  });
 });
 
-// =====================
-// 🔥 ATIVAR PRODUTOS
-// =====================
-app.get("/ativar-produtos", async (req, res) => {
-  const resultado = await Produto.updateMany({}, { ativo: true });
-  res.send(`✅ ${resultado.modifiedCount} produtos ativados`);
-});
+// CRIAR PRODUTO
+app.post("/produtos", verificarAdmin, upload.single("imagem"), (req, res) => {
+  const { nome, preco, estoque } = req.body;
 
-// =====================
-// 📦 PEDIDOS
-// =====================
-app.post("/pedido", async (req, res) => {
-  try {
-    const { itens, total, nome, telefone, endereco } = req.body;
+  const imagem = req.file ? "/img/" + req.file.filename : "";
 
-    for (let item of itens) {
-      const produto = await Produto.findById(item.id);
-      if (!produto || produto.estoque < item.qtd) {
-        return res.status(400).send("Produto sem estoque");
-      }
+  db.query(
+    "INSERT INTO produtos (nome, preco, estoque, imagem, ativo) VALUES (?, ?, ?, ?, 1)",
+    [nome, preco, estoque, imagem],
+    (err, result) => {
+      if (err) return res.status(500).send(err);
+
+      res.json({ id: result.insertId });
     }
+  );
+});
 
-    for (let item of itens) {
-      await Produto.findByIdAndUpdate(item.id, {
-        $inc: { estoque: -item.qtd }
-      });
+// ATUALIZAR
+app.put("/produtos/:id", verificarAdmin, (req, res) => {
+  db.query(
+    "UPDATE produtos SET ? WHERE id = ?",
+    [req.body, req.params.id],
+    (err) => {
+      if (err) return res.status(500).send(err);
+      res.send("Atualizado");
     }
+  );
+});
 
-    const novoPedido = new Pedido({
-      nome,
-      telefone,
-      endereco,
-      itens,
-      total
-    });
+// DELETE
+app.delete("/produtos/:id", verificarAdmin, (req, res) => {
+  db.query(
+    "DELETE FROM produtos WHERE id = ?",
+    [req.params.id],
+    () => res.send("ok")
+  );
+});
 
-    await novoPedido.save();
+// =====================
+// 📦 PEDIDO
+// =====================
+app.post("/pedido", (req, res) => {
+  const { nome, telefone, endereco, total } = req.body;
 
-    res.send("Pedido realizado com sucesso!");
-  } catch {
-    res.status(500).send("Erro ao finalizar pedido");
-  }
+  db.query(
+    "INSERT INTO pedidos (nome, telefone, endereco, total) VALUES (?, ?, ?, ?)",
+    [nome, telefone, endereco, total],
+    () => res.send("Pedido realizado!")
+  );
 });
 
 // =====================
 // 📦 MEUS PEDIDOS
 // =====================
-app.get("/meus-pedidos", async (req, res) => {
-  const pedidos = await Pedido.find().sort({ data: -1 });
-  res.json(pedidos);
+app.get("/meus-pedidos", (req, res) => {
+  db.query("SELECT * FROM pedidos ORDER BY id DESC", (err, results) => {
+    res.json(results);
+  });
 });
 
 // =====================
-// 🚀 PORTA
-// =====================
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.listen(PORT, () => {
   console.log(`🚀 http://localhost:${PORT}`);
