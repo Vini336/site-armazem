@@ -34,6 +34,8 @@ async function fazerLogin() {
   const email = document.getElementById("emailModal").value;
   const senha = document.getElementById("senhaModal").value;
 
+  console.log("Tentando login:", email);
+
   if (!email || !senha) {
     alert("Preencha email e senha!");
     return;
@@ -48,13 +50,15 @@ async function fazerLogin() {
       body: JSON.stringify({ email, senha })
     });
 
+    const texto = await resposta.text();
+    console.log("Resposta:", texto);
+
     if (!resposta.ok) {
-      const erro = await resposta.text();
-      alert(erro || "Email ou senha inválidos");
+      alert(texto);
       return;
     }
 
-    const data = await resposta.json();
+    const data = JSON.parse(texto);
 
     localStorage.setItem("usuario", email);
     localStorage.setItem("token", data.token);
@@ -67,7 +71,8 @@ async function fazerLogin() {
       window.location.href = "admin.html";
     }
 
-  } catch {
+  } catch (erro) {
+    console.error("Erro login:", erro);
     alert("Erro ao fazer login");
   }
 }

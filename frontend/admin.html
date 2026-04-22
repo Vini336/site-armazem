@@ -94,9 +94,9 @@ async function carregar() {
         📦 Estoque: ${p.estoque || 0} <br>
         <p>Status: ${p.ativo ? "🟢 Ativo" : "🔴 Oculto"}</p>
 
-        <button onclick="editar('${p._id}')">✏️</button>
-        <button onclick="deletar('${p._id}')">🗑</button>
-        <button onclick="toggleAtivo('${p._id}', ${p.ativo})">
+        <button onclick="editar('${p.id}')">✏️</button>
+        <button onclick="deletar('${p.id}')">🗑</button>
+        <button onclick="toggleAtivo('${p.id}', ${p.ativo})">
           ${p.ativo ? "Desativar" : "Ativar"}
         </button>
       </div>

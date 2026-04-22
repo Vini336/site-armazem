@@ -30,7 +30,22 @@
   <div id="paginacao"></div>
 </section>
 
-<!-- SCRIPTS (ORDEM CORRETA) -->
+<!-- 🔥 MODAL LOGIN -->
+<div id="loginModal" class="modal">
+  <div style="background:white; padding:20px; border-radius:10px; color:black; width:300px;">
+    
+    <h2>Login</h2>
+
+    <input id="emailModal" placeholder="Email">
+    <input id="senhaModal" type="password" placeholder="Senha">
+
+    <button onclick="fazerLogin()">Entrar</button>
+    <button onclick="fecharLogin()">Fechar</button>
+
+  </div>
+</div>
+
+<!-- SCRIPTS -->
 <script src="/js/api.js"></script>
 <script src="/js/carrinho.js"></script>
 <script src="/js/login.js"></script>
