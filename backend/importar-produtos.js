@@ -5,10 +5,13 @@ const db = require("./database/mysql");
 const resultados = [];
 
 fs.createReadStream("./data/produtos.csv")
-  .pipe(csv({ separator: ";" })) // 🔥 CORREÇÃO AQUI
+  .pipe(csv({ separator: ";" }))
   .on("data", (data) => {
+    // 🔥 FILTRO INTELIGENTE (ESSA É A CHAVE)
+    if (!data.nome || data.nome.trim() === "") return;
+
     resultados.push({
-      nome: data.nome,
+      nome: data.nome.trim(),
       preco: parseFloat(data.preco) || 0,
       estoque: parseInt(data.stock) || 0,
       imagem: "",
@@ -16,7 +19,7 @@ fs.createReadStream("./data/produtos.csv")
     });
   })
   .on("end", () => {
-    console.log("📦 Produtos lidos:", resultados.length);
+    console.log("📦 Produtos válidos:", resultados.length);
 
     resultados.forEach((p) => {
       db.query(
@@ -25,5 +28,5 @@ fs.createReadStream("./data/produtos.csv")
       );
     });
 
-    console.log("🔥 IMPORTAÇÃO FINALIZADA CORRETAMENTE!");
+    console.log("🔥 IMPORTAÇÃO LIMPA FINALIZADA!");
   });
