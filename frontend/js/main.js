@@ -28,7 +28,7 @@
 
           <button 
             ${produto.estoque <= 0 ? "disabled" : ""}
-            onclick="adicionarCarrinho('${produto._id}', '${produto.nome}', ${produto.preco})"
+            onclick="adicionarCarrinho('${produto.id}', '${produto.nome}', ${produto.preco})"
           >
             ${produto.estoque <= 0 ? "Esgotado" : "🛒 Adicionar"}
           </button>
