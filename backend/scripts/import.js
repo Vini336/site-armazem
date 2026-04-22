@@ -1,71 +1,60 @@
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const db = require("./database/mysql");
 const path = require("path");
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
-const fs = require("fs");
-const csv = require("csv-parser");
-const mongoose = require("mongoose");
+const app = express();
 
-// 🔥 conexão com banco
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("🔥 Banco conectado"))
-  .catch(err => console.log(err));
+app.use(cors());
+app.use(express.json());
 
-const Produto = require("../models/produtos");
+// 🔥 CORREÇÃO DO CAMINHO DO FRONTEND
+app.use(express.static(path.join(__dirname, "../frontend")));
 
-const resultados = [];
+// 🔥 ROTA DE PRODUTOS (COM BUSCA + PAGINAÇÃO)
+app.get("/produtos", (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limite = 12;
+  const offset = (page - 1) * limite;
 
-// 🔥 caminho correto do CSV
-const caminhoCSV = path.resolve(__dirname, "../../data/produtos.csv");
+  const busca = req.query.busca || "";
 
-console.log("CAMINHO CSV:", caminhoCSV);
+  db.query(
+    "SELECT * FROM produtos WHERE ativo = 1 AND nome LIKE ? LIMIT ? OFFSET ?",
+    [`%${busca}%`, limite, offset],
+    (err, produtos) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Erro no banco");
+      }
 
-// 🔥 leitura do CSV (vírgula agora)
-fs.createReadStream(caminhoCSV)
-  .pipe(csv({ separator: ";" })) // ✅ agora é vírgula
-  .on("data", (data) => {
+      db.query(
+        "SELECT COUNT(*) as total FROM produtos WHERE ativo = 1 AND nome LIKE ?",
+        [`%${busca}%`],
+        (err2, count) => {
+          if (err2) {
+            console.error(err2);
+            return res.status(500).send("Erro no count");
+          }
 
-    console.log("LINHA CSV:", data);
-
-    resultados.push({
-      nome: data.nome || data.NOME || "Produto sem nome",
-
-      preco: parseFloat(
-        (data.preco || data.PRECO || "0")
-          .toString()
-          .replace(",", ".")
-      ) || 0,
-
-      imagem: data.imagem || data.IMAGEM || "img/sem-imagem.png",
-
-      // 🔥 CORREÇÃO DO ESTOQUE (resolve NaN)
-      estoque: parseFloat(
-        (data.stock || data.STOCK || "0")
-          .toString()
-          .replace(",", ".")
-          .replace("(", "-")
-          .replace(")", "")
-      ) || 0,
-
-      codigo: Number(data.codigo || data.CODIGO || 0),
-
-      qmin: parseFloat(
-        (data.qmin || data.QMIN || "0")
-          .toString()
-          .replace(",", ".")
-      ) || 0,
-
-      ativo: true
-    });
-  })
-  .on("end", async () => {
-    try {
-      await Produto.deleteMany();
-      await Produto.insertMany(resultados);
-
-      console.log("🔥 Produtos importados com sucesso!");
-      process.exit();
-    } catch (erro) {
-      console.error("Erro ao importar:", erro);
-      process.exit();
+          res.json({
+            produtos,
+            totalPaginas: Math.ceil(count[0].total / limite),
+          });
+        }
+      );
     }
-  });
+  );
+});
+
+// 🔥 GARANTE QUE / FUNCIONE (abrir index.html)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+});
+
+// 🔥 INICIA SERVIDOR
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+});
