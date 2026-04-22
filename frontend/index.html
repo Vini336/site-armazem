@@ -2,62 +2,111 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Armazém Hora Certa</title>
 
-  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0d2a6b;
+      color: white;
+    }
+
+    header {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #busca {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    #listaProdutos {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      padding: 20px;
+    }
+
+    .card {
+      background: #1e3c88;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+      background: white;
+    }
+
+    .preco {
+      color: #ffd700;
+      font-weight: bold;
+    }
+
+    button {
+      margin-top: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    #paginacao {
+      text-align: center;
+      padding: 10px;
+    }
+
+    #paginacao button {
+      margin: 3px;
+    }
+
+    #carrinho {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 250px;
+      height: 100%;
+      background: white;
+      color: black;
+      padding: 10px;
+      overflow-y: auto;
+    }
+  </style>
 </head>
+
 <body>
 
 <header>
-  <img src="/img/logo.png" class="logo">
+  <h2>🕒 Armazém Hora Certa</h2>
 
-  <nav>
-    <span class="btn-login" onclick="abrirLogin()">Entrar</span>
-    <span onclick="abrirCarrinho()">🛒</span>
-  </nav>
+  <input 
+    id="busca"
+    placeholder="Buscar produto..."
+    oninput="buscarProdutos()"
+  >
 </header>
 
-<section class="banner">
-  <h2>🔥 Ofertas da Semana</h2>
-  <p>Os melhores preços você encontra aqui!</p>
-</section>
+<div id="listaProdutos"></div>
 
-<section class="produtos">
-  <h2>Nossos Produtos</h2>
+<div id="paginacao"></div>
 
-  <div id="listaProdutos" class="grid-produtos"></div>
-  <div id="paginacao"></div>
-</section>
-
-<!-- 🔥 MODAL LOGIN -->
-<div id="loginModal" class="modal">
-  <div style="background:white; padding:20px; border-radius:10px; color:black; width:300px;">
-    
-   <h2>Login</h2>
-
-<input id="emailModal" placeholder="Email">
-<input id="senhaModal" type="password" placeholder="Senha">
-
-<button onclick="fazerLogin()">Entrar</button>
-
-<p style="margin-top:10px;">
-  Não tem conta?
-  <a href="cadastro.html" style="color:blue; cursor:pointer;">
-    Criar conta
-  </a>
-</p>
-
-<button onclick="fecharLogin()">Fechar</button>
-
-  </div>
+<div id="carrinho">
+  <h3>Carrinho</h3>
+  <div id="itensCarrinho"></div>
 </div>
 
-<!-- SCRIPTS -->
-<script src="/js/api.js"></script>
-<script src="/js/carrinho.js"></script>
-<script src="/js/login.js"></script>
-<script src="/js/main.js"></script>
+<script>
+const API = "http://localhost:3000";
+</script>
+
+<script src="js/main.js"></script>
+<script src="js/carrinho.js"></script>
 
 </body>
 </html>

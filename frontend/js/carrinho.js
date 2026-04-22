@@ -1,10 +1,10 @@
 let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
 function adicionarCarrinho(id, nome, preco) {
-  let itemExistente = carrinho.find(item => item.id === id);
+  const item = carrinho.find(p => p.id === id);
 
-  if (itemExistente) {
-    itemExistente.qtd++;
+  if (item) {
+    item.qtd++;
   } else {
     carrinho.push({ id, nome, preco, qtd: 1 });
   }
@@ -12,69 +12,39 @@ function adicionarCarrinho(id, nome, preco) {
   atualizarCarrinho();
 }
 
-function atualizarCarrinho() {
-  const itensDiv = document.getElementById("itensCarrinho");
-
-  if (carrinho.length === 0) {
-    itensDiv.innerHTML = "<p>Carrinho vazio</p>";
-    return;
-  }
-
-  let html = "";
-
-  carrinho.forEach((item, index) => {
-    html += `
-      <div>
-        <p>${item.nome}</p>
-        <p>R$ ${item.preco} x ${item.qtd}</p>
-        <button onclick="removerItem(${index})">Remover</button>
-      </div>
-    `;
-  });
-
-  itensDiv.innerHTML = html;
-
-  localStorage.setItem("carrinho", JSON.stringify(carrinho));
-}
-
 function removerItem(index) {
   carrinho.splice(index, 1);
   atualizarCarrinho();
 }
 
-async function finalizarCompra() {
-  const nome = document.getElementById("nomeCliente").value;
-  const telefone = document.getElementById("telefoneCliente").value;
-  const endereco = document.getElementById("enderecoCliente").value;
+function atualizarCarrinho() {
+  const div = document.getElementById("itensCarrinho");
 
-  const total = carrinho.reduce((t, i) => t + i.preco * i.qtd, 0);
-
-  const resposta = await fetch(`${API}/pedido`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      nome,
-      telefone,
-      endereco,
-      total,
-      itens: carrinho.map(item => ({
-        id: item.id,
-        qtd: item.qtd
-      }))
-    })
-  });
-
-  if (!resposta.ok) {
-    const erro = await resposta.text();
-    alert(erro);
+  if (carrinho.length === 0) {
+    div.innerHTML = "<p>Vazio</p>";
     return;
   }
 
-  alert("Pedido realizado!");
+  let html = "";
+  let total = 0;
 
-  carrinho = [];
-  localStorage.removeItem("carrinho");
-  atualizarCarrinho();
+  carrinho.forEach((item, i) => {
+    total += item.preco * item.qtd;
+
+    html += `
+      <div>
+        <p>${item.nome}</p>
+        <p>${item.qtd}x - R$ ${item.preco}</p>
+        <button onclick="removerItem(${i})">Remover</button>
+      </div>
+    `;
+  });
+
+  html += `<h3>Total: R$ ${total.toFixed(2)}</h3>`;
+
+  div.innerHTML = html;
+
+  localStorage.setItem("carrinho", JSON.stringify(carrinho));
 }
+
+atualizarCarrinho();
