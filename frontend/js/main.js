@@ -1,4 +1,4 @@
-  document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const container = document.getElementById("listaProdutos");
   const paginacao = document.getElementById("paginacao");
 
@@ -8,6 +8,7 @@
     try {
       const resposta = await fetch(`${API}/produtos?page=${paginaAtual}`);
       const data = await resposta.json();
+
       const produtos = data.produtos;
 
       container.innerHTML = "";
@@ -18,7 +19,7 @@
         card.innerHTML = `
           <img src="${produto.imagem}">
           <h3>${produto.nome}</h3>
-          <p>R$ ${produto.preco.toFixed(2)}</p>
+          <p>R$ ${Number(produto.preco).toFixed(2)}</p>
 
           ${
             produto.estoque <= 0
@@ -39,7 +40,8 @@
 
       criarPaginacao(data.totalPaginas);
 
-    } catch {
+    } catch (erro) {
+      console.error("Erro real:", erro);
       container.innerHTML = "<p>Erro ao carregar produtos</p>";
     }
   }
