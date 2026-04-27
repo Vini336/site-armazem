@@ -1,13 +1,27 @@
 let paginaAtual = 1;
 let termoBusca = "";
+let categoriaSelecionada = "";
+
+const container = document.getElementById("listaProdutos");
+const paginacao = document.getElementById("paginacao");
+
+// 🔥 debounce (evita várias requisições)
+let timeoutBusca;
+
+function debounceBusca(valor) {
+  clearTimeout(timeoutBusca);
+
+  timeoutBusca = setTimeout(() => {
+    termoBusca = valor;
+    paginaAtual = 1;
+    carregarProdutos();
+  }, 400);
+}
 
 async function carregarProdutos() {
-  const container = document.getElementById("listaProdutos");
-  const paginacao = document.getElementById("paginacao");
-
   try {
     const res = await fetch(
-      `${API}/produtos?page=${paginaAtual}&busca=${termoBusca}`
+      `${API}/produtos?page=${paginaAtual}&busca=${termoBusca}&categoria=${categoriaSelecionada}`
     );
 
     const data = await res.json();
@@ -25,28 +39,34 @@ async function carregarProdutos() {
 
         ${p.estoque <= 0 ? "<p style='color:red'>Esgotado</p>" : ""}
 
-        <button 
-          ${p.estoque <= 0 ? "disabled" : ""}
-          onclick="adicionarCarrinho('${p.id}', '${p.nome}', ${p.preco})"
-        >
+        <button ${p.estoque <= 0 ? "disabled" : ""}>
           ${p.estoque <= 0 ? "Esgotado" : "Adicionar"}
         </button>
       `;
 
+      // 🔥 botão adicionar (sem onclick)
+      const btn = card.querySelector("button");
+
+      if (p.estoque > 0) {
+        btn.addEventListener("click", () => {
+          adicionarCarrinho(p.id, p.nome, p.preco);
+        });
+      }
+
       container.appendChild(card);
     });
 
-    // PAGINAÇÃO
+    // 🔥 PAGINAÇÃO
     paginacao.innerHTML = "";
 
     for (let i = 1; i <= data.totalPaginas; i++) {
       const btn = document.createElement("button");
       btn.innerText = i;
 
-      btn.onclick = () => {
+      btn.addEventListener("click", () => {
         paginaAtual = i;
         carregarProdutos();
-      };
+      });
 
       paginacao.appendChild(btn);
     }
@@ -56,10 +76,16 @@ async function carregarProdutos() {
   }
 }
 
-function buscarProdutos() {
-  termoBusca = document.getElementById("busca").value;
+// 🔥 EVENTOS (AGORA SIM CORRETO)
+document.getElementById("busca").addEventListener("input", (e) => {
+  debounceBusca(e.target.value);
+});
+
+document.getElementById("categoria").addEventListener("change", (e) => {
+  categoriaSelecionada = e.target.value;
   paginaAtual = 1;
   carregarProdutos();
-}
+});
 
+// 🔥 iniciar
 carregarProdutos();
